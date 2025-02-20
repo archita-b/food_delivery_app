@@ -4,11 +4,12 @@ CREATE TYPE order_status_enum AS ENUM ('pending','confirmed','cancelled','prepar
 CREATE TABLE customers (
     id SERIAL PRIMARY KEY,
     full_name TEXT,
-    address POINT NOT NULL,
+    address TEXT NOT NULL,
+    lat_long POINT NOT NULL,
     phone VARCHAR(20) NOT NULL
 );
 
-CREATE TABLE drivers (
+CREATE TABLE delivery_partners (
     id SERIAL PRIMARY KEY,
     full_name TEXT,
     phone VARCHAR(20) NOT NULL,
@@ -18,7 +19,8 @@ CREATE TABLE drivers (
 CREATE TABLE kitchens (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    address POINT NOT NULL,
+    address TEXT NOT NULL,
+    lat_long POINT NOT NULL,
     opening_time TIME NOT NULL,
     closing_time TIME NOT NULL
 );
@@ -33,14 +35,14 @@ CREATE TABLE items (
 CREATE TABLE kitchen_items (
     kitchen_id INTEGER REFERENCES kitchens(id),
     item_id INTEGER REFERENCES items(id),
-    is_available BOOLEAN DEFAULT TRUE,
+    stock INTEGER NOT NULL,
     PRIMARY KEY (kitchen_id, item_id)
 );
 
 CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
     customer_id INTEGER REFERENCES customers(id),
-    driver_id INTEGER REFERENCES drivers(id),
+    delivery_partner_id INTEGER REFERENCES delivery_partners(id),
     status order_status_enum DEFAULT 'pending',
     total_price DECIMAL DEFAULT 0
 );

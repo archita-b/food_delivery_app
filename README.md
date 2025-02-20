@@ -5,32 +5,7 @@ and get them delivered.
 
 **Endpoints**
 
-### 1. List of kitchens
-
-**Endpoint**: `GET /kitchens`
-**Description**: Retrieves list of kitchens for a particular reataurant.
-
-#### Response:
-
-**success**:
-
-**status** `200 OK`
-
-```json
-[
-  {
-    "id": 1,
-    "name": "",
-    "address": "",
-    "opening_time": "",
-    "closing_time": ""
-  }
-]
-```
-
----
-
-### 2. List of menu items
+### 1. List of menu items
 
 **Endpoint**: `GET /items`
 **Description**: List menu items available.
@@ -66,7 +41,7 @@ and get them delivered.
 
 ---
 
-### 3. Placing an order from a restaurant
+### 2. Placing an order from a restaurant
 
 **Endpoint**: `POST /users/orders`
 **Description**: A customer orders item(s).
@@ -97,7 +72,7 @@ and get them delivered.
 
 ---
 
-### 4. Cancelling an order
+### 3. Cancelling an order
 
 **Endpoint**: `DELETE /users/orders/${id}`
 **Description**: Cancells a placed order.
