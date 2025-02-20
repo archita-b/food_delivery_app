@@ -48,7 +48,6 @@ and get them delivered.
 
 #### Parameters:
 
-- `kitchen_id`: id of the kitchen item(s) ordered from.
 - `item_id`: id of the item ordered.
 - `num_of_items`: number of the item in that order.
 - `price`: price of the item ordered.

@@ -4,6 +4,6 @@ import { getItems } from "../controller/items.js";
 
 const router = express.Router();
 
-router.get("/kitchens", getItems);
+router.get("/items", getItems);
 
 export default router;

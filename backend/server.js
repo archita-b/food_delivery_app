@@ -1,11 +1,15 @@
 import express from "express";
 
 import itemsRouter from "./routes/items.js";
+import ordersRouter from "./routes/orders.js";
 
 const app = express();
 const port = process.env.PORT || 5000;
 
+app.use(express.json());
+
 app.use("/api", itemsRouter);
+app.use("/api", ordersRouter);
 
 app.use((err, req, res, next) => {
   const errStatus = err.status || 500;
