@@ -2,6 +2,30 @@ import pool from "./database.js";
 
 export async function placeOrderDB(customerId, items) {
   try {
+    const kitchenId = 1;
+
+    const kitchenTimingsResult = await pool.query(
+      `SELECT opening_time, closing_time FROM kitchens WHERE id = $1`,
+      [kitchenId]
+    );
+
+    const { opening_time, closing_time } = kitchenTimingsResult.rows[0];
+
+    const [openHour, openMinute] = opening_time.split(":").map(Number);
+    const [closeHour, closeMinute] = closing_time.split(":").map(Number);
+
+    const openingTime = openHour * 60 + openMinute;
+    const closingTime = closeHour * 60 + closeMinute;
+
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentTime = currentHour * 60 + currentMinute;
+
+    if (currentTime < openingTime || currentTime > closingTime) {
+      throw new Error("Kitchen is closed to take orders.");
+    }
+
     await pool.query("BEGIN");
 
     const itemIds = items.map((item) => item.item_id);
