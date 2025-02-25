@@ -74,7 +74,6 @@ export async function placeOrderDB(customerId, items) {
       status,
       created_at,
     } = updatedOrderResult.rows[0];
-    // console.log(result);
 
     return {
       order_id: id,
@@ -88,4 +87,37 @@ export async function placeOrderDB(customerId, items) {
     await pool.query("ROLLBACK");
     throw error;
   }
+}
+
+export async function cancelOrderDB(id) {
+  const cancellationWindowMs = 5 * 60 * 1000;
+
+  const orderResult = await pool.query(`SELECT * FROM orders WHERE id = $1`, [
+    id,
+  ]);
+
+  if (orderResult.rowCount === 0) {
+    throw new Error("Order does not exist.");
+  }
+
+  const order = orderResult.rows[0];
+
+  const timeOfPlacingOrder = new Date(order.created_at).getTime();
+  const timeOfCancellingOrder = Date.now();
+  const diff = timeOfCancellingOrder - timeOfPlacingOrder;
+
+  if (diff > cancellationWindowMs) {
+    throw new Error("Cancellation window has expired.");
+  }
+
+  const result = await pool.query(
+    `UPDATE orders SET status = 'cancelled' WHERE id = $1`,
+    [id]
+  );
+
+  if (result.rowCount !== 1) {
+    throw new Error("Error cancelling order.");
+  }
+
+  return result.rowCount;
 }

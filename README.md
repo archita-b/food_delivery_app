@@ -8,7 +8,7 @@ and get them delivered.
 ### 1. List of menu items
 
 **Endpoint**: `GET /items`
-**Description**: List menu items available.
+**Description**: Lists menu items available.
 
 #### Response:
 
@@ -20,21 +20,21 @@ and get them delivered.
 [
   {
     "id": 1,
-    "name": "",
-    "type": "",
-    "price":
+    "name": "Margherita Pizza",
+    "type": "veg",
+    "price": "12.99"
   },
   {
     "id": 2,
-    "name": "",
-    "type": "",
-    "price":
+    "name": "Pepperoni Pizza",
+    "type": "non-veg",
+    "price": "15.99"
   },
   {
     "id": 3,
-    "name": "",
-    "type": "",
-    "price":
+    "name": "Vegan Burger",
+    "type": "vegan",
+    "price": "10.50"
   }
 ]
 ```
@@ -44,13 +44,12 @@ and get them delivered.
 ### 2. Placing an order from a restaurant
 
 **Endpoint**: `POST /users/orders`
-**Description**: A customer orders item(s).
+**Description**: A customer places an order with one or more items.
 
 #### Parameters:
 
 - `item_id`: id of the item ordered.
-- `num_of_items`: number of the item in that order.
-- `price`: price of the item ordered.
+- `quantity`: number of the item in that order.
 
 #### Response:
 
@@ -60,12 +59,30 @@ and get them delivered.
 
 ```json
 {
-    "id": 1,
-    "customer_id": ,
-    "driver_id": ,
-    "status": "",
-    "items_ordered": ,
-    "total_price":
+  "order_id": 20,
+  "customer_id": 1,
+  "delivery_partner_id": null,
+  "kitchen_id": 1,
+  "order_status": "confirmed",
+  "created_at": "2025-02-25T04:34:53.690Z"
+}
+```
+
+**errors**:
+
+**status**: `400 Bad Request`
+
+```json
+{
+  "error": "Items are required."
+}
+```
+
+**status**: `409 Conflict`
+
+```json
+{
+  "error": "One or more items are out of stock."
 }
 ```
 
@@ -81,3 +98,29 @@ and get them delivered.
 **success**:
 
 **status**: `204 No Content`
+
+**errors**:
+
+**status**: `400 Bad Request`
+
+```json
+{
+  "error": "Order ID is missing."
+}
+```
+
+**status**: `404 Not Found`
+
+```json
+{
+  "error": "Order does not exist."
+}
+```
+
+**status**: `403 Forbidden`
+
+```json
+{
+  "error": "Cancellation window has expired."
+}
+```
