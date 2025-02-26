@@ -1,5 +1,6 @@
 import express from "express";
 
+import authRouter from "./routes/auth.js";
 import itemsRouter from "./routes/items.js";
 import ordersRouter from "./routes/orders.js";
 
@@ -8,6 +9,7 @@ const port = process.env.PORT || 5000;
 
 app.use(express.json());
 
+app.use("/api", authRouter);
 app.use("/api", itemsRouter);
 app.use("/api", ordersRouter);
 

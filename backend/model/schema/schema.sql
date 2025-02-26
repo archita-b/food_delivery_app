@@ -1,8 +1,14 @@
 CREATE TYPE item_type_enum AS ENUM ('veg','non-veg','vegan');
 CREATE TYPE order_status_enum AS ENUM ('pending','confirmed','cancelled','preparing','out_for_delivery');
 
+CREATE TABLE auth (
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(100) NOT NULL
+);
+
 CREATE TABLE customers (
-    id SERIAL PRIMARY KEY,
+    id SERIAL PRIMARY KEY REFERENCES auth(user_id),
     full_name TEXT,
     address TEXT NOT NULL,
     lat_long POINT NOT NULL,
@@ -13,7 +19,7 @@ CREATE TABLE customers (
 );
 
 CREATE TABLE delivery_partners (
-    id SERIAL PRIMARY KEY,
+    id SERIAL PRIMARY KEY REFERENCES auth(user_id),
     full_name TEXT,
     phone VARCHAR(20) NOT NULL,
     is_available BOOLEAN DEFAULT TRUE,
