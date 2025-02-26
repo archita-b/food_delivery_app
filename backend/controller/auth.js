@@ -1,6 +1,11 @@
 import bcrypt from "bcrypt";
 
-import { createSession, getUser, registerUserDB } from "../model/users.js";
+import {
+  createSession,
+  deleteSession,
+  getUser,
+  registerUserDB,
+} from "../model/users.js";
 
 export async function registerUser(req, res, next) {
   try {
@@ -59,6 +64,20 @@ export async function login(req, res, next) {
       });
   } catch (error) {
     console.log("Error in login controller:", error.message);
+    next(error);
+  }
+}
+
+export async function logout(req, res, next) {
+  try {
+    const sessionId = req.sessionId;
+
+    await deleteSession(sessionId);
+
+    res.clearCookie("sessionId");
+    res.sendStatus(204);
+  } catch (error) {
+    console.log("Error in logout controller:", error.message);
     next(error);
   }
 }

@@ -9,6 +9,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.use("/api", authRouter);
 app.use("/api", itemsRouter);
