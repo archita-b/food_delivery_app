@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 
-import { getuser, registerUserDB } from "../model/users.js";
+import { createSession, getUser, registerUserDB } from "../model/users.js";
 
 export async function registerUser(req, res, next) {
   try {
@@ -10,7 +10,7 @@ export async function registerUser(req, res, next) {
       return res.status(400).json({ error: "All fields are required." });
     }
 
-    const existingUser = await getuser(userName);
+    const existingUser = await getUser(userName);
 
     if (existingUser) {
       return res.status(422).json({ error: "Username already exists." });
@@ -31,6 +31,34 @@ export async function registerUser(req, res, next) {
     res.status(201).json(userDetails);
   } catch (error) {
     console.log("Error in registerUser controller:", error.message);
+    next(error);
+  }
+}
+
+export async function login(req, res, next) {
+  try {
+    const { userName, password } = req.body;
+
+    const user = await getUser(userName);
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+
+    if (!user || !isPasswordCorrect) {
+      return res.status(401).json({ error: "Invalid username or password" });
+    }
+
+    const sessionId = await createSession(user.user_id);
+
+    res
+      .cookie("sessionId", sessionId, {
+        maxAge: 24 * 60 * 60 * 1000,
+        httpOnly: true,
+      })
+      .status(201)
+      .json({
+        message: "User logged in successfully.",
+      });
+  } catch (error) {
+    console.log("Error in login controller:", error.message);
     next(error);
   }
 }

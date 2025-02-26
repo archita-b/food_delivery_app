@@ -1,6 +1,6 @@
 import pool from "./database.js";
 
-export async function getuser(userName) {
+export async function getUser(userName) {
   const result = await pool.query("SELECT * FROM auth WHERE username = $1", [
     userName,
   ]);
@@ -45,4 +45,12 @@ export async function registerUserDB(
     address: customerResult.rows[0].address,
     phone: customerResult.rows[0].phone,
   };
+}
+
+export async function createSession(userId) {
+  const result = await pool.query(
+    "INSERT INTO sessions (user_id) VALUES ($1) RETURNING session_id",
+    [userId]
+  );
+  return result.rows[0].session_id;
 }
