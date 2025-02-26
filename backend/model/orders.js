@@ -1,5 +1,10 @@
 import pool from "./database.js";
 
+export async function getOrderById(id) {
+  const result = await pool.query(`SELECT * FROM orders WHERE id = $1`, [id]);
+  return result.rows[0];
+}
+
 export async function placeOrderDB(customerId, items) {
   try {
     const kitchenId = 1;

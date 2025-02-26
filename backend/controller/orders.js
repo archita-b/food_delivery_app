@@ -2,13 +2,18 @@ import { cancelOrderDB, placeOrderDB } from "../model/orders.js";
 
 export async function placeOrder(req, res, next) {
   try {
+    const customerId = req.userId;
+    const doesCustomerExist = await checkCustomerExists(customerId);
+
+    if (!doesCustomerExist) {
+      return res.status(403).json({ error: "Customer does not exist." });
+    }
+
     const { items } = req.body;
 
     if (!items?.length) {
       return res.status(400).json({ error: "Items are required." });
     }
-
-    const customerId = 1; // will come from login info
 
     const orderDetails = await placeOrderDB(customerId, items);
 
@@ -30,6 +35,17 @@ export async function cancelOrder(req, res, next) {
 
     if (!orderId) {
       return res.status(400).json({ error: "Order ID is missing." });
+    }
+
+    const order = await getOrderById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: "Order does not exist." });
+    }
+
+    if (order.customer_id !== req.userId) {
+      return res.status(403).json({
+        error: "You are not authorized to cancel the order.",
+      });
     }
 
     await cancelOrderDB(orderId);

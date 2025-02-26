@@ -68,3 +68,10 @@ export async function deleteSession(sessionId) {
     sessionId,
   ]);
 }
+
+export async function checkCustomerExists(id) {
+  const result = await pool.query("SELECT id FROM customers WHERE id = $1", [
+    id,
+  ]);
+  return result.rowCount > 0;
+}
