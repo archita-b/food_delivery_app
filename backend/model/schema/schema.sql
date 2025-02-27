@@ -10,7 +10,6 @@ CREATE TABLE auth (
 CREATE TABLE sessions (
     user_id VARCHAR(100) REFERENCES auth(username),
     session_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    expired BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE customers (

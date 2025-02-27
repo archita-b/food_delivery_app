@@ -64,9 +64,7 @@ export async function getSession(sessionId) {
 }
 
 export async function deleteSession(sessionId) {
-  await pool.query("UPDATE sessions SET expired = true WHERE session_id = $1", [
-    sessionId,
-  ]);
+  await pool.query("DELETE FROM sessions WHERE session_id = $1", [sessionId]);
 }
 
 export async function checkCustomerExists(id) {
