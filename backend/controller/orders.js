@@ -3,11 +3,6 @@ import { cancelOrderDB, placeOrderDB } from "../model/orders.js";
 
 export const placeOrder = wrapControllerWithTryCatch(async (req, res, next) => {
   const customerId = req.userId;
-  const doesCustomerExist = await checkCustomerExists(customerId);
-
-  if (!doesCustomerExist) {
-    return res.status(403).json({ error: "Customer does not exist." });
-  }
 
   const { items } = req.body;
 

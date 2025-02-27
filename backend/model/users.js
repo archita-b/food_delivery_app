@@ -67,7 +67,7 @@ export async function deleteSession(sessionId) {
   await pool.query("DELETE FROM sessions WHERE session_id = $1", [sessionId]);
 }
 
-export async function checkCustomerExists(id) {
+export async function checkUserExists(id) {
   const result = await pool.query("SELECT id FROM customers WHERE id = $1", [
     id,
   ]);
