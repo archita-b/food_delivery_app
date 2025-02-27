@@ -1,11 +1,7 @@
+import { wrapControllerWithTryCatch } from "../middleware/utils.js";
 import { getItemsDB } from "../model/items.js";
 
-export async function getItems(req, res, next) {
-  try {
-    const menuItems = await getItemsDB();
-    res.status(200).json(menuItems);
-  } catch (error) {
-    console.log("Error in getItems controller: ", error.message);
-    next(error);
-  }
-}
+export const getItems = wrapControllerWithTryCatch(async (req, res, next) => {
+  const menuItems = await getItemsDB();
+  res.status(200).json(menuItems);
+});

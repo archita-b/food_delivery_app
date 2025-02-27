@@ -6,9 +6,10 @@ import {
   getUser,
   registerUserDB,
 } from "../model/users.js";
+import { wrapControllerWithTryCatch } from "../middleware/utils.js";
 
-export async function registerUser(req, res, next) {
-  try {
+export const registerUser = wrapControllerWithTryCatch(
+  async (req, res, next) => {
     const { userName, password, fullName, address, latLong, phone } = req.body;
 
     if (!userName || !password || !address || !latLong || !phone) {
@@ -34,50 +35,37 @@ export async function registerUser(req, res, next) {
     );
 
     res.status(201).json(userDetails);
-  } catch (error) {
-    console.log("Error in registerUser controller:", error.message);
-    next(error);
   }
-}
+);
 
-export async function login(req, res, next) {
-  try {
-    const { userName, password } = req.body;
+export const login = wrapControllerWithTryCatch(async (req, res, next) => {
+  const { userName, password } = req.body;
 
-    const user = await getUser(userName);
-    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+  const user = await getUser(userName);
+  const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
-    if (!user || !isPasswordCorrect) {
-      return res.status(401).json({ error: "Invalid username or password" });
-    }
-
-    const sessionId = await createSession(user.user_id);
-
-    res
-      .cookie("sessionId", sessionId, {
-        maxAge: 24 * 60 * 60 * 1000,
-        httpOnly: true,
-      })
-      .status(201)
-      .json({
-        message: "User logged in successfully.",
-      });
-  } catch (error) {
-    console.log("Error in login controller:", error.message);
-    next(error);
+  if (!user || !isPasswordCorrect) {
+    return res.status(401).json({ error: "Invalid username or password" });
   }
-}
 
-export async function logout(req, res, next) {
-  try {
-    const sessionId = req.sessionId;
+  const sessionId = await createSession(user.user_id);
 
-    await deleteSession(sessionId);
+  res
+    .cookie("sessionId", sessionId, {
+      maxAge: 24 * 60 * 60 * 1000,
+      httpOnly: true,
+    })
+    .status(201)
+    .json({
+      message: "User logged in successfully.",
+    });
+});
 
-    res.clearCookie("sessionId");
-    res.sendStatus(204);
-  } catch (error) {
-    console.log("Error in logout controller:", error.message);
-    next(error);
-  }
-}
+export const logout = wrapControllerWithTryCatch(async (req, res, next) => {
+  const sessionId = req.sessionId;
+
+  await deleteSession(sessionId);
+
+  res.clearCookie("sessionId");
+  res.sendStatus(204);
+});

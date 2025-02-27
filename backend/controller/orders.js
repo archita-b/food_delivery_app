@@ -1,36 +1,27 @@
+import { wrapControllerWithTryCatch } from "../middleware/utils.js";
 import { cancelOrderDB, placeOrderDB } from "../model/orders.js";
 
-export async function placeOrder(req, res, next) {
-  try {
-    const customerId = req.userId;
-    const doesCustomerExist = await checkCustomerExists(customerId);
+export const placeOrder = wrapControllerWithTryCatch(async (req, res, next) => {
+  const customerId = req.userId;
+  const doesCustomerExist = await checkCustomerExists(customerId);
 
-    if (!doesCustomerExist) {
-      return res.status(403).json({ error: "Customer does not exist." });
-    }
-
-    const { items } = req.body;
-
-    if (!items?.length) {
-      return res.status(400).json({ error: "Items are required." });
-    }
-
-    const orderDetails = await placeOrderDB(customerId, items);
-
-    res.status(201).json(orderDetails);
-  } catch (error) {
-    console.log("Error in placeAnOrder controller: ", error.message);
-
-    if (error.message === "One or more items are out of stock.") {
-      return res.status(409).json({ error: error.message });
-    }
-
-    next(error);
+  if (!doesCustomerExist) {
+    return res.status(403).json({ error: "Customer does not exist." });
   }
-}
 
-export async function cancelOrder(req, res, next) {
-  try {
+  const { items } = req.body;
+
+  if (!items?.length) {
+    return res.status(400).json({ error: "Items are required." });
+  }
+
+  const orderDetails = await placeOrderDB(customerId, items);
+
+  res.status(201).json(orderDetails);
+});
+
+export const cancelOrder = wrapControllerWithTryCatch(
+  async (req, res, next) => {
     const { id: orderId } = req.params;
 
     if (!orderId) {
@@ -50,17 +41,5 @@ export async function cancelOrder(req, res, next) {
 
     await cancelOrderDB(orderId);
     res.sendStatus(204);
-  } catch (error) {
-    console.log("Error in cancelOrder controller: ", error.message);
-
-    if (error.message === "Order does not exist.") {
-      return res.status(404).json({ error: error.message });
-    }
-
-    if (error.message === "Cancellation window has expired.") {
-      return res.status(403).json({ error: error.message });
-    }
-
-    next(error);
   }
-}
+);
