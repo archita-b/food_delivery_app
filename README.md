@@ -59,12 +59,22 @@ and get them delivered.
 
 ```json
 {
-  "order_id": 20,
-  "customer_id": 1,
+  "order_id": 3,
+  "customer_id": 3,
+  "items": [
+    {
+      "item_id": 1,
+      "quantity": 1
+    },
+    {
+      "item_id": 3,
+      "quantity": 2
+    }
+  ],
   "delivery_partner_id": null,
   "kitchen_id": 1,
   "order_status": "confirmed",
-  "created_at": "2025-02-25T04:34:53.690Z"
+  "created_at": "2025-02-28T07:19:28.250Z"
 }
 ```
 

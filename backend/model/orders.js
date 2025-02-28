@@ -114,6 +114,7 @@ async function placeOrderDB(customerId, items) {
     return {
       order_id: id,
       customer_id: customer_id,
+      items: items,
       delivery_partner_id: delivery_partner_id,
       kitchen_id: kitchen_id,
       order_status: status,
