@@ -1,13 +1,26 @@
 import pool from "./database.js";
+import { wrapInTransaction } from "../middleware/utils.js";
 
-export async function getUser(userName) {
+export const wrappedGetUser = wrapInTransaction(getUser);
+
+export const wrappedRegisterUserDB = wrapInTransaction(registerUserDB);
+
+export const wrappedCreateSession = wrapInTransaction(createSession);
+
+export const wrappedGetSession = wrapInTransaction(getSession);
+
+export const wrappedDeleteSession = wrapInTransaction(deleteSession);
+
+export const wrappedCheckUserExists = wrapInTransaction(checkUserExists);
+
+async function getUser(userName) {
   const result = await pool.query("SELECT * FROM auth WHERE username = $1", [
     userName,
   ]);
   return result.rows[0];
 }
 
-export async function registerUserDB(
+async function registerUserDB(
   userName,
   password,
   fullName,
@@ -47,7 +60,7 @@ export async function registerUserDB(
   };
 }
 
-export async function createSession(userId) {
+async function createSession(userId) {
   const result = await pool.query(
     "INSERT INTO sessions (user_id) VALUES ($1) RETURNING session_id",
     [userId]
@@ -55,7 +68,7 @@ export async function createSession(userId) {
   return result.rows[0].session_id;
 }
 
-export async function getSession(sessionId) {
+async function getSession(sessionId) {
   const result = await pool.query(
     "SELECT * FROM sessions WHERE session_id = $1",
     [sessionId]
@@ -63,11 +76,11 @@ export async function getSession(sessionId) {
   return result.rows[0];
 }
 
-export async function deleteSession(sessionId) {
+async function deleteSession(sessionId) {
   await pool.query("DELETE FROM sessions WHERE session_id = $1", [sessionId]);
 }
 
-export async function checkUserExists(id) {
+async function checkUserExists(id) {
   const result = await pool.query("SELECT id FROM customers WHERE id = $1", [
     id,
   ]);

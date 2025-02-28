@@ -1,11 +1,18 @@
 import pool from "./database.js";
+import { wrapInTransaction } from "../middleware/utils.js";
 
-export async function getOrderById(id) {
+export const wrappedGetOrderById = wrapInTransaction(getOrderById);
+
+export const wrappedPlaceOrderDB = wrapInTransaction(placeOrderDB);
+
+export const wrappedCancelOrderDB = wrapInTransaction(cancelOrderDB);
+
+async function getOrderById(id) {
   const result = await pool.query(`SELECT * FROM orders WHERE id = $1`, [id]);
   return result.rows[0];
 }
 
-export async function placeOrderDB(customerId, items) {
+async function placeOrderDB(customerId, items) {
   try {
     const kitchenId = 1;
 
@@ -118,7 +125,7 @@ export async function placeOrderDB(customerId, items) {
   }
 }
 
-export async function cancelOrderDB(id) {
+async function cancelOrderDB(id) {
   const cancellationWindowMs = 5 * 60 * 1000;
 
   const orderResult = await pool.query(`SELECT * FROM orders WHERE id = $1`, [

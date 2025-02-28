@@ -1,10 +1,10 @@
 import bcrypt from "bcrypt";
 
 import {
-  createSession,
-  deleteSession,
-  getUser,
-  registerUserDB,
+  wrappedCreateSession,
+  wrappedDeleteSession,
+  wrappedGetUser,
+  wrappedRegisterUserDB,
 } from "../model/users.js";
 import { wrapControllerWithTryCatch } from "../middleware/utils.js";
 
@@ -16,7 +16,7 @@ export const registerUser = wrapControllerWithTryCatch(
       return res.status(400).json({ error: "All fields are required." });
     }
 
-    const existingUser = await getUser(userName);
+    const existingUser = await wrappedGetUser(userName);
 
     if (existingUser) {
       return res.status(422).json({ error: "Username already exists." });
@@ -25,7 +25,7 @@ export const registerUser = wrapControllerWithTryCatch(
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const userDetails = await registerUserDB(
+    const userDetails = await wrappedRegisterUserDB(
       userName,
       hashedPassword,
       fullName,
@@ -41,14 +41,14 @@ export const registerUser = wrapControllerWithTryCatch(
 export const login = wrapControllerWithTryCatch(async (req, res, next) => {
   const { userName, password } = req.body;
 
-  const user = await getUser(userName);
+  const user = await wrappedGetUser(userName);
   const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
   if (!user || !isPasswordCorrect) {
     return res.status(401).json({ error: "Invalid username or password" });
   }
 
-  const sessionId = await createSession(user.user_id);
+  const sessionId = await wrappedCreateSession(user.user_id);
 
   res
     .cookie("sessionId", sessionId, {
@@ -64,7 +64,7 @@ export const login = wrapControllerWithTryCatch(async (req, res, next) => {
 export const logout = wrapControllerWithTryCatch(async (req, res, next) => {
   const sessionId = req.sessionId;
 
-  await deleteSession(sessionId);
+  await wrappedDeleteSession(sessionId);
 
   res.clearCookie("sessionId");
   res.sendStatus(204);
