@@ -1,18 +1,15 @@
 import pool from "./database.js";
 import { wrapInTransaction } from "../middleware/utils.js";
 
-export const wrappedGetOrderById = wrapInTransaction(getOrderById);
-
-export const wrappedPlaceOrderDB = wrapInTransaction(placeOrderDB);
-
-export const wrappedCancelOrderDB = wrapInTransaction(cancelOrderDB);
-
-async function getOrderById(id) {
+export const getOrderById = wrapInTransaction(async function getOrderById(id) {
   const result = await pool.query(`SELECT * FROM orders WHERE id = $1`, [id]);
   return result.rows[0];
-}
+});
 
-async function placeOrderDB(customerId, items) {
+export const placeOrderDB = wrapInTransaction(async function placeOrderDB(
+  customerId,
+  items
+) {
   try {
     const kitchenId = 1;
 
@@ -37,8 +34,6 @@ async function placeOrderDB(customerId, items) {
     if (currentTime < openingTime || currentTime > closingTime) {
       throw new Error("Kitchen is closed to take orders.");
     }
-
-    await pool.query("BEGIN");
 
     const itemIds = items.map((item) => item.item_id);
     const itemQuantites = items.map((item) => item.quantity);
@@ -100,8 +95,6 @@ async function placeOrderDB(customerId, items) {
       [orderId]
     );
 
-    await pool.query("COMMIT");
-
     const {
       id,
       customer_id,
@@ -124,9 +117,11 @@ async function placeOrderDB(customerId, items) {
     await pool.query("ROLLBACK");
     throw error;
   }
-}
+});
 
-async function cancelOrderDB(id) {
+export const cancelOrderDB = wrapInTransaction(async function cancelOrderDB(
+  id
+) {
   const cancellationWindowMs = 5 * 60 * 1000;
 
   const orderResult = await pool.query(`SELECT * FROM orders WHERE id = $1`, [
@@ -157,4 +152,4 @@ async function cancelOrderDB(id) {
   }
 
   return result.rowCount;
-}
+});

@@ -1,9 +1,5 @@
 import { wrapControllerWithTryCatch } from "../middleware/utils.js";
-import {
-  wrappedCancelOrderDB,
-  wrappedGetOrderById,
-  wrappedPlaceOrderDB,
-} from "../model/orders.js";
+import { cancelOrderDB, getOrderById, placeOrderDB } from "../model/orders.js";
 
 export const placeOrder = wrapControllerWithTryCatch(async (req, res, next) => {
   const customerId = req.userId;
@@ -14,7 +10,7 @@ export const placeOrder = wrapControllerWithTryCatch(async (req, res, next) => {
     return res.status(400).json({ error: "Items are required." });
   }
 
-  const orderDetails = await wrappedPlaceOrderDB(customerId, items);
+  const orderDetails = await placeOrderDB(customerId, items);
 
   res.status(201).json(orderDetails);
 });
@@ -27,7 +23,7 @@ export const cancelOrder = wrapControllerWithTryCatch(
       return res.status(400).json({ error: "Order ID is missing." });
     }
 
-    const order = await wrappedGetOrderById(orderId);
+    const order = await getOrderById(orderId);
     if (!order) {
       return res.status(404).json({ error: "Order does not exist." });
     }
@@ -38,7 +34,7 @@ export const cancelOrder = wrapControllerWithTryCatch(
       });
     }
 
-    await wrappedCancelOrderDB(orderId);
+    await cancelOrderDB(orderId);
     res.sendStatus(204);
   }
 );
