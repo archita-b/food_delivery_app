@@ -73,8 +73,9 @@ export const deleteSession = wrapInTransaction(async function deleteSession(
 export const checkUserExists = wrapInTransaction(async function checkUserExists(
   id
 ) {
-  const result = await pool.query("SELECT id FROM customers WHERE id = $1", [
-    id,
-  ]);
+  const result = await pool.query(
+    "SELECT user_id FROM auth WHERE user_id = $1",
+    [id]
+  );
   return result.rowCount > 0;
 });

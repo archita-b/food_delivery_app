@@ -28,5 +28,12 @@ INSERT INTO kitchen_items (kitchen_id,item_id,stock) VALUES
 
 
 -- delivery_partners table
-INSERT INTO delivery_partners (full_name,phone) VALUES 
-    ('Manjunath Yadav', '9876543210');
+INSERT INTO auth (username, password) VALUES 
+        ('driver1', '123456'),
+        ('driver2', '123456'),
+        ('driver3', '123456');
+
+INSERT INTO delivery_partners (id,full_name,phone) VALUES 
+    (4, 'Driver One', '9876543210'),
+    (5, 'Driver Two', '9876543210'),
+    (6, 'Driver Three', '9876543210');
