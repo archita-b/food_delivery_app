@@ -1,3 +1,5 @@
+import { updateAvailabilityDB } from "../model/deliveryPartners";
+
 const deliveryPartnersLocation = {};
 
 function updateDeliveryPartnersLocation(partnerId, latitude, longitude) {
@@ -18,11 +20,11 @@ function updateDeliveryPartnersLocation(partnerId, latitude, longitude) {
 }
 
 function getAvailableDeliveryPartners() {
-  return Object.entries(deliveryPartnersLocation)
-    .filter(([partnerId, partnerLocation]) => partnerLocation.isAvailable)
-    .map(([partnerId, partnerLocation]) => {
+  return Object.entries(deliveryPartnersLocation).map(
+    ([partnerId, partnerLocation]) => {
       return { id: partnerId, ...partnerLocation };
-    });
+    }
+  );
 }
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -67,18 +69,30 @@ function nearestDeliveryPartner(orderLat, orderLong) {
   return nearestPartner;
 }
 
-function assignDeliveryPartner(orderId, orderLat, orderLong) {
+async function assignDeliveryPartner(orderId, orderLat, orderLong) {
   const nearestPartner = nearestDeliveryPartner(orderLat, orderLong);
 
   if (!nearestPartner) {
     throw new Error("No delivery partner found.");
   }
 
-  if (deliveryPartnersLocation[nearestPartner.partnerId]) {
-    deliveryPartnersLocation[nearestPartner.partnerId].isAvailable = false;
-  }
+  const partnerId = nearestPartner.partnerId;
 
-  return { orderId, deliveryPartner: nearestPartner.partnerId };
+  delete deliveryPartnersLocation[partnerId];
+
+  await updateAvailabilityDB(partnerId, false);
+
+  return { orderId, deliveryPartner: partnerId };
+}
+
+async function markPartnerAvailableAgain(partnerId, latitude, longitude) {
+  deliveryPartnersLocation[partnerId] = {
+    latitude,
+    longitude,
+    isAvailable: true,
+  };
+
+  await updateAvailabilityDB(partnerId, true);
 }
 
 // updateDeliveryPartnersLocation(1, 12.97, 77.59);
