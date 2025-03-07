@@ -1,10 +1,15 @@
 import { wrapControllerWithTryCatch } from "../middleware/utils.js";
 import { cancelOrderDB, getOrderById, placeOrderDB } from "../model/orders.js";
+import { assignDeliveryPartner } from "../services/deliveryPartners.js";
 
-export const placeOrder = wrapControllerWithTryCatch(async (req, res, next) => {
+export const placeOrder = wrapControllerWithTryCatch(async function placeOrder(
+  req,
+  res,
+  next
+) {
   const customerId = req.userId;
 
-  const { items } = req.body;
+  const { items, location } = req.body;
 
   if (!items?.length) {
     return res.status(400).json({ error: "Items are required." });
@@ -12,11 +17,17 @@ export const placeOrder = wrapControllerWithTryCatch(async (req, res, next) => {
 
   const orderDetails = await placeOrderDB(customerId, items);
 
+  await assignDeliveryPartner(
+    orderDetails.order_id,
+    location.latitude,
+    location.longitude
+  );
+
   res.status(201).json(orderDetails);
 });
 
 export const cancelOrder = wrapControllerWithTryCatch(
-  async (req, res, next) => {
+  async function cancelOrder(req, res, next) {
     const { id: orderId } = req.params;
 
     if (!orderId) {

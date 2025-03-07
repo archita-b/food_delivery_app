@@ -153,3 +153,28 @@ export const cancelOrderDB = wrapInTransaction(async function cancelOrderDB(
 
   return result.rowCount;
 });
+
+export const assignDeliveryPartnerDB = wrapInTransaction(
+  async function assignDeliveryPartnerDB(partnerId, orderId) {
+    const partnerCheck = await pool.query(
+      `SELECT id FROM delivery_partners WHERE id = $1`,
+      [partnerId]
+    );
+
+    if (partnerCheck.rowCount === 0) {
+      throw new Error("Delivery partner does not exist.");
+    }
+
+    await pool.query(
+      `UPDATE orders SET delivery_partner_id = $1 WHERE id = $2`,
+      [partnerId, orderId]
+    );
+
+    await pool.query(
+      `UPDATE delivery_partners SET is_available = false WHERE id = $1`,
+      [partnerId]
+    );
+
+    return { orderId, partnerId };
+  }
+);

@@ -1,13 +1,18 @@
 import { updateAvailabilityDB } from "../model/deliveryPartners.js";
+import { assignDeliveryPartnerDB } from "../model/orders.js";
 import { calculateDistance } from "../utils.js/distance.js";
 
-const deliveryPartnersLocation = {};
+const deliveryPartnersLocation = {
+  4: { latitude: 12.97, longitude: 77.59, isAvailable: true },
+  5: { latitude: 12.95, longitude: 77.56, isAvailable: true },
+  6: { latitude: 12.98, longitude: 77.6, isAvailable: true },
+};
 
-function updateDeliveryPartnersLocation(partnerId, latitude, longitude) {
-  if (!partnerId || !latitude || !longitude) {
-    throw new Error("Invalid location update parameters.");
-  }
-
+export function updateDeliveryPartnersLocationService(
+  partnerId,
+  latitude,
+  longitude
+) {
   if (!deliveryPartnersLocation[partnerId]) {
     deliveryPartnersLocation[partnerId] = {
       latitude,
@@ -51,7 +56,7 @@ function nearestDeliveryPartner(orderLat, orderLong) {
   return nearestPartner;
 }
 
-async function assignDeliveryPartner(orderId, orderLat, orderLong) {
+export async function assignDeliveryPartner(orderId, orderLat, orderLong) {
   const nearestPartner = nearestDeliveryPartner(orderLat, orderLong);
 
   if (!nearestPartner) {
@@ -62,9 +67,7 @@ async function assignDeliveryPartner(orderId, orderLat, orderLong) {
 
   delete deliveryPartnersLocation[partnerId];
 
-  await updateAvailabilityDB(partnerId, false);
-
-  return { orderId, deliveryPartner: partnerId };
+  return await assignDeliveryPartnerDB(orderId, partnerId);
 }
 
 async function markPartnerAvailableAgain(partnerId, latitude, longitude) {
