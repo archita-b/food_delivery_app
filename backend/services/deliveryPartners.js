@@ -67,7 +67,7 @@ export async function assignDeliveryPartner(orderId, orderLat, orderLong) {
 
   delete deliveryPartnersLocation[partnerId];
 
-  return await assignDeliveryPartnerDB(orderId, partnerId);
+  return await assignDeliveryPartnerDB(partnerId, orderId);
 }
 
 async function markPartnerAvailableAgain(partnerId, latitude, longitude) {
@@ -79,9 +79,3 @@ async function markPartnerAvailableAgain(partnerId, latitude, longitude) {
 
   await updateAvailabilityDB(partnerId, true);
 }
-
-// updateDeliveryPartnersLocation(1, 12.97, 77.59);
-// updateDeliveryPartnersLocation(2, 12.95, 77.56);
-// updateDeliveryPartnersLocation(3, 12.98, 77.6);
-
-// getAvailableDeliveryPartners();

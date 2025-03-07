@@ -17,13 +17,13 @@ export const placeOrder = wrapControllerWithTryCatch(async function placeOrder(
 
   const orderDetails = await placeOrderDB(customerId, items);
 
-  await assignDeliveryPartner(
+  const { partnerId } = await assignDeliveryPartner(
     orderDetails.order_id,
     location.latitude,
     location.longitude
   );
 
-  res.status(201).json(orderDetails);
+  res.status(201).json({ ...orderDetails, delivery_partner_id: partnerId });
 });
 
 export const cancelOrder = wrapControllerWithTryCatch(
