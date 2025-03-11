@@ -179,10 +179,18 @@ export async function findNearestKitchen(latitude, longitude, items) {
       INNER JOIN kitchens k
       ON ki.kitchen_id = k.id
       WHERE ki.stock >= ro.quantity
+      AND k.opening_time <= CURRENT_TIME
+      AND k.closing_time >= CURRENT_TIME
       GROUP BY ki.kitchen_id, k.lat_long::TEXT
       HAVING COUNT(ki.item_id) = $3`,
     [itemIds, itemQuantites, items.length]
   );
+
+  if (!kitchensResult.rows.length) {
+    throw new Error(
+      "Items are either out of stock or no restaurants are open."
+    );
+  }
 
   let nearestKitchen = null;
   let minDistance = Infinity;
