@@ -38,22 +38,6 @@ export const placeOrderDB = wrapInTransaction(async function placeOrderDB(
     const itemIds = items.map((item) => item.item_id);
     const itemQuantites = items.map((item) => item.quantity);
 
-    // const stockAvailabilityResult = await pool.query(
-    //   `WITH request_orders AS (
-    //       SELECT * FROM unnest($1::int[], $2::int[])
-    //       AS t(item_id, quantity)
-    //     )
-    //     SELECT kitchen_items.item_id FROM kitchen_items
-    //     INNER JOIN request_orders
-    //     ON kitchen_items.item_id = request_orders.item_id
-    //     WHERE kitchen_items.stock >= request_orders.quantity FOR UPDATE`,
-    //   [itemIds, itemQuantites]
-    // );
-
-    // if (stockAvailabilityResult.rows.length < items.length) {
-    //   throw new Error("One or more items are out of stock.");
-    // }
-
     const orderResult = await pool.query(
       `INSERT INTO orders (customer_id,kitchen_id) VALUES ($1,$2) RETURNING id`,
       [customerId, kitchenId]
@@ -181,46 +165,50 @@ export const assignDeliveryPartnerDB = wrapInTransaction(
 );
 
 export async function findNearestKitchen(latitude, longitude, items) {
-  const kitchensResult = await pool.query(`SELECT id, lat_long FROM kitchens`);
+  const itemIds = items.map((item) => item.item_id);
+  const itemQuantites = items.map((item) => item.quantity);
+
+  const kitchensResult = await pool.query(
+    `WITH request_orders AS (
+      SELECT * FROM unnest($1::int[], $2::int[]) AS t(item_id, quantity)
+    )
+      SELECT ki.kitchen_id, k.lat_long::TEXT, COUNT(ki.item_id) AS available_items
+      FROM kitchen_items ki
+      INNER JOIN request_orders ro
+      ON ki.item_id = ro.item_id
+      INNER JOIN kitchens k
+      ON ki.kitchen_id = k.id
+      WHERE ki.stock >= ro.quantity
+      GROUP BY ki.kitchen_id, k.lat_long::TEXT
+      HAVING COUNT(ki.item_id) = $3`,
+    [itemIds, itemQuantites, items.length]
+  );
 
   let nearestKitchen = null;
   let minDistance = Infinity;
 
   for (const kitchen of kitchensResult.rows) {
-    const hasStock = await checkStockInKitchen(kitchen.id, items);
-    if (!hasStock) continue;
+    const [kitchenLat, kitchenLong] = kitchen.lat_long
+      .replace("(", "")
+      .replace(")", "")
+      .split(",")
+      .map(Number);
 
     const distance = calculateDistance(
       latitude,
       longitude,
-      kitchen.lat_long.x,
-      kitchen.lat_long.y
+      kitchenLat,
+      kitchenLong
     );
 
     if (distance < minDistance) {
-      nearestKitchen = { id: kitchen.id, latitude, longitude };
+      nearestKitchen = {
+        id: kitchen.kitchen_id,
+        latitude: kitchenLat,
+        longitude: kitchenLong,
+      };
       minDistance = distance;
     }
   }
   return nearestKitchen;
-}
-
-async function checkStockInKitchen(kitchenId, items) {
-  const itemIds = items.map((item) => item.item_id);
-  const itemQuantites = items.map((item) => item.quantity);
-
-  const stockAvailabilityResult = await pool.query(
-    `WITH request_orders AS (
-        SELECT * FROM unnest($1::int[], $2::int[]) 
-        AS t(item_id, quantity)
-      )
-      SELECT kitchen_items.item_id FROM kitchen_items
-      INNER JOIN request_orders
-      ON kitchen_items.item_id = request_orders.item_id
-      WHERE kitchen_items.stock >= request_orders.quantity 
-      AND kitchen_items.kitchen_id = $3`,
-    [itemIds, itemQuantites, kitchenId]
-  );
-
-  return stockAvailabilityResult.rowCount === items.length;
 }
