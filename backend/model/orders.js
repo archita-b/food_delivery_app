@@ -1,5 +1,6 @@
 import pool from "./database.js";
 import { wrapInTransaction } from "../middleware/utils.js";
+import { calculateDistance } from "../utils.js/distance.js";
 
 export const getOrderById = wrapInTransaction(async function getOrderById(id) {
   const result = await pool.query(`SELECT * FROM orders WHERE id = $1`, [id]);
@@ -8,11 +9,10 @@ export const getOrderById = wrapInTransaction(async function getOrderById(id) {
 
 export const placeOrderDB = wrapInTransaction(async function placeOrderDB(
   customerId,
-  items
+  items,
+  kitchenId
 ) {
   try {
-    const kitchenId = 1;
-
     const kitchenTimingsResult = await pool.query(
       `SELECT opening_time, closing_time FROM kitchens WHERE id = $1`,
       [kitchenId]
@@ -38,25 +38,25 @@ export const placeOrderDB = wrapInTransaction(async function placeOrderDB(
     const itemIds = items.map((item) => item.item_id);
     const itemQuantites = items.map((item) => item.quantity);
 
-    const stockAvailabilityResult = await pool.query(
-      `WITH request_orders AS (
-          SELECT * FROM unnest($1::int[], $2::int[]) 
-          AS t(item_id, quantity)
-        )
-        SELECT kitchen_items.item_id FROM kitchen_items
-        INNER JOIN request_orders
-        ON kitchen_items.item_id = request_orders.item_id
-        WHERE kitchen_items.stock >= request_orders.quantity FOR UPDATE`,
-      [itemIds, itemQuantites]
-    );
+    // const stockAvailabilityResult = await pool.query(
+    //   `WITH request_orders AS (
+    //       SELECT * FROM unnest($1::int[], $2::int[])
+    //       AS t(item_id, quantity)
+    //     )
+    //     SELECT kitchen_items.item_id FROM kitchen_items
+    //     INNER JOIN request_orders
+    //     ON kitchen_items.item_id = request_orders.item_id
+    //     WHERE kitchen_items.stock >= request_orders.quantity FOR UPDATE`,
+    //   [itemIds, itemQuantites]
+    // );
 
-    if (stockAvailabilityResult.rows.length < items.length) {
-      throw new Error("One or more items are out of stock.");
-    }
+    // if (stockAvailabilityResult.rows.length < items.length) {
+    //   throw new Error("One or more items are out of stock.");
+    // }
 
     const orderResult = await pool.query(
       `INSERT INTO orders (customer_id,kitchen_id) VALUES ($1,$2) RETURNING id`,
-      [customerId, 1]
+      [customerId, kitchenId]
     );
 
     const { id: orderId } = orderResult.rows[0];
@@ -82,8 +82,9 @@ export const placeOrderDB = wrapInTransaction(async function placeOrderDB(
           UPDATE kitchen_items 
           SET stock = kitchen_items.stock - request_orders.quantity
           FROM request_orders
-          WHERE kitchen_items.item_id = request_orders.item_id`,
-      [itemIds, itemQuantites]
+          WHERE kitchen_items.item_id = request_orders.item_id 
+          AND kitchen_items.kitchen_id = $3`,
+      [itemIds, itemQuantites, kitchenId]
     );
 
     const updatedOrderResult = await pool.query(
@@ -178,3 +179,48 @@ export const assignDeliveryPartnerDB = wrapInTransaction(
     return { orderId, partnerId };
   }
 );
+
+export async function findNearestKitchen(latitude, longitude, items) {
+  const kitchensResult = await pool.query(`SELECT id, lat_long FROM kitchens`);
+
+  let nearestKitchen = null;
+  let minDistance = Infinity;
+
+  for (const kitchen of kitchensResult.rows) {
+    const hasStock = await checkStockInKitchen(kitchen.id, items);
+    if (!hasStock) continue;
+
+    const distance = calculateDistance(
+      latitude,
+      longitude,
+      kitchen.lat_long.x,
+      kitchen.lat_long.y
+    );
+
+    if (distance < minDistance) {
+      nearestKitchen = { id: kitchen.id, latitude, longitude };
+      minDistance = distance;
+    }
+  }
+  return nearestKitchen;
+}
+
+async function checkStockInKitchen(kitchenId, items) {
+  const itemIds = items.map((item) => item.item_id);
+  const itemQuantites = items.map((item) => item.quantity);
+
+  const stockAvailabilityResult = await pool.query(
+    `WITH request_orders AS (
+        SELECT * FROM unnest($1::int[], $2::int[]) 
+        AS t(item_id, quantity)
+      )
+      SELECT kitchen_items.item_id FROM kitchen_items
+      INNER JOIN request_orders
+      ON kitchen_items.item_id = request_orders.item_id
+      WHERE kitchen_items.stock >= request_orders.quantity 
+      AND kitchen_items.kitchen_id = $3`,
+    [itemIds, itemQuantites, kitchenId]
+  );
+
+  return stockAvailabilityResult.rowCount === items.length;
+}

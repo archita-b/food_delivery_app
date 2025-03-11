@@ -10,7 +10,15 @@ INSERT INTO kitchens (name,address,lat_long,opening_time,closing_time) VALUES
        ('Dominos-Koramangla',
        'Koramangla - Bengaluru',
        POINT(12.940545270929217, 77.62489812523958),
-       '08:00', '22:00');
+       '08:00', '22:00'),
+       ('Dominos-JP Nagar',
+       'JP Nagar - Bengaluru',
+       POINT(12.908111781599962, 77.59538215320975),
+       '09:00', '23:00'),
+       ('Dominos-Jayanagar',
+       'Jayanagar - Bengaluru',
+       POINT(12.922374515442991, 77.5857506387326),
+       '09:30', '23:30');
 
 
 -- items table

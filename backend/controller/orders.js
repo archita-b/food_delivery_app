@@ -1,5 +1,10 @@
 import { wrapControllerWithTryCatch } from "../middleware/utils.js";
-import { cancelOrderDB, getOrderById, placeOrderDB } from "../model/orders.js";
+import {
+  cancelOrderDB,
+  findNearestKitchen,
+  getOrderById,
+  placeOrderDB,
+} from "../model/orders.js";
 import { assignDeliveryPartner } from "../services/deliveryPartners.js";
 
 export const placeOrder = wrapControllerWithTryCatch(async function placeOrder(
@@ -9,18 +14,24 @@ export const placeOrder = wrapControllerWithTryCatch(async function placeOrder(
 ) {
   const customerId = req.userId;
 
-  const { items, location } = req.body;
+  const { items, location: customerLocation } = req.body;
 
   if (!items?.length) {
     return res.status(400).json({ error: "Items are required." });
   }
 
-  const orderDetails = await placeOrderDB(customerId, items);
+  const nearestKitchen = await findNearestKitchen(
+    customerLocation.latitude,
+    customerLocation.longitude,
+    items
+  );
+
+  const orderDetails = await placeOrderDB(customerId, items, nearestKitchen.id);
 
   const { partnerId } = await assignDeliveryPartner(
     orderDetails.order_id,
-    location.latitude,
-    location.longitude
+    nearestKitchen.latitude,
+    nearestKitchen.longitude
   );
 
   res.status(201).json({ ...orderDetails, delivery_partner_id: partnerId });
