@@ -1,7 +1,8 @@
 import pool from "./database.js";
 import { wrapInTransaction } from "../middleware/utils.js";
 import { calculateDistance } from "../utils.js/distance.js";
-import { quadTree } from "../utils.js/quadTree.js";
+import { Point } from "../utils.js/quadTree.js";
+import { kitchenQuadTree } from "./kitchens.js";
 
 export const getOrderById = wrapInTransaction(async function getOrderById(id) {
   const result = await pool.query(`SELECT * FROM orders WHERE id = $1`, [id]);
@@ -193,34 +194,16 @@ export async function findNearestKitchen(latitude, longitude, items) {
     );
   }
 
+  const availableKitchens = new Set(
+    kitchensResult.rows.map((row) => row.kitchen_id)
+  );
+
   const customerLocation = new Point(latitude, longitude);
-  const nearestKitchen = quadTree.findNearest(customerLocation);
+  const nearestKitchens = kitchenQuadTree.findNearest(customerLocation);
 
-  // let nearestKitchen = null;
-  // let minDistance = Infinity;
-
-  // for (const kitchen of kitchensResult.rows) {
-  //   const [kitchenLat, kitchenLong] = kitchen.lat_long
-  //     .replace("(", "")
-  //     .replace(")", "")
-  //     .split(",")
-  //     .map(Number);
-
-  //   const distance = calculateDistance(
-  //     latitude,
-  //     longitude,
-  //     kitchenLat,
-  //     kitchenLong
-  //   );
-
-  //   if (distance < minDistance) {
-  //     nearestKitchen = {
-  //       id: kitchen.kitchen_id,
-  //       latitude: kitchenLat,
-  //       longitude: kitchenLong,
-  //     };
-  //     minDistance = distance;
-  //   }
-  // }
-  return nearestKitchen;
+  for (const kitchen of nearestKitchens) {
+    if (availableKitchens.has(kitchen.id)) {
+      return kitchen;
+    }
+  }
 }

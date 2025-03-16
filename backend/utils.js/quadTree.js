@@ -40,7 +40,8 @@ export class quadTree {
     if (this.subTrees[quadrant] == null) {
       this.subTrees[quadrant] = new Node(
         node.id,
-        node.position,
+        node.position.latitude,
+        node.position.longitude,
         node.openingTime,
         node.closingTime
       );
@@ -90,27 +91,27 @@ export class quadTree {
     }
   }
 
-  findNearest(point) {
-    const nearestNode = null;
-    const minDistance = Infinity;
+  *findNearest(point) {
+    const candidates = [];
 
     for (const quadrant of Object.values(this.subTrees)) {
       if (quadrant instanceof Node) {
-        const distance = this.calculateDistance(
+        const distance = calculateDistance(
           point.latitude,
           point.longitude,
           quadrant.position.latitude,
           quadrant.position.longitude
         );
-
-        if (distance < minDistance) {
-          minDistance = distance;
-          nearestNode = quadrant;
-        }
+        candidates.push({ node: quadrant, distance: distance });
       } else if (quadrant instanceof quadTree) {
-        nearestNode = quadrant.findNearest(point);
+        yield* quadrant.findNearest(point);
       }
     }
-    return nearestNode;
+
+    candidates.sort((a, b) => a.distance - b.distance);
+
+    for (const { node } of candidates) {
+      yield node;
+    }
   }
 }
