@@ -1,5 +1,5 @@
 import { getKitchens, getOpenKitchensWithStock } from "../model/kitchens.js";
-import { Node, Point, quadTree } from "../utils.js/quadTree.js";
+import { Node, Point, QuadTree } from "../utils.js/quadTree.js";
 import { wrapControllerWithTryCatch } from "../middleware/utils.js";
 
 let kitchenQuadTree = null;
@@ -7,17 +7,6 @@ let kitchenQuadTree = null;
 export const buildQuadTree = wrapControllerWithTryCatch(
   async function buildQuadTree() {
     const kitchens = await getKitchens();
-
-    const latitudes = kitchens.map((kitchen) => kitchen.lat_long.x);
-    const longitudes = kitchens.map((kitchen) => kitchen.lat_long.y);
-
-    const topLeft = new Point(Math.max(...latitudes), Math.min(...longitudes));
-    const bottomRight = new Point(
-      Math.min(...latitudes),
-      Math.max(...longitudes)
-    );
-
-    kitchenQuadTree = new quadTree(topLeft, bottomRight);
 
     const kitchenNodes = kitchens.map((kitchen) => {
       const { x: latitude, y: longitude } = kitchen.lat_long;
@@ -30,7 +19,7 @@ export const buildQuadTree = wrapControllerWithTryCatch(
       );
     });
 
-    kitchenQuadTree.insert(kitchenNodes);
+    kitchenQuadTree = new QuadTree(kitchenNodes);
 
     return kitchenQuadTree;
   }

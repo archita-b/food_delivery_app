@@ -16,8 +16,21 @@ export class Node {
   }
 }
 
-export class quadTree {
-  constructor(topLeft, bottomRight) {
+export class QuadTree {
+  constructor(nodes = []) {
+    if (!Array.isArray(nodes) || !nodes.length) {
+      throw new Error("Quad tree must be initialized with at least one node.");
+    }
+
+    const latitudes = nodes.map((node) => node.position.latitude);
+    const longitudes = nodes.map((node) => node.position.longitude);
+
+    const topLeft = new Point(Math.max(...latitudes), Math.min(...longitudes));
+    const bottomRight = new Point(
+      Math.min(...latitudes),
+      Math.max(...longitudes)
+    );
+
     this.topLeft = topLeft;
     this.bottomRight = bottomRight;
     this.midPoint = new Point(
@@ -30,71 +43,35 @@ export class quadTree {
       bottomLeft: null,
       bottomRight: null,
     };
+
+    this.insert(nodes);
   }
 
-  insert(items) {
-    if (!items) return;
+  insert(nodes) {
+    nodes = Array.isArray(nodes) ? nodes : [nodes];
 
-    if (Array.isArray(items)) {
-      for (const item of items) {
-        this.insert(item);
+    for (const node of nodes) {
+      const quadrant = this.getQuadrant(node);
+
+      if (this.subTrees[quadrant] == null) {
+        this.subTrees[quadrant] = node;
+      } else if (this.subTrees[quadrant] instanceof Node) {
+        const existingNode = this.subTrees[quadrant];
+        this.subTrees[quadrant] = new QuadTree([existingNode, node]);
+      } else {
+        this.subTrees[quadrant].insert(node);
       }
-      return;
-    }
-
-    const node = items;
-    const quadrant = this.getQuadrant(node);
-
-    if (this.subTrees[quadrant] == null) {
-      this.subTrees[quadrant] = new Node(
-        node.id,
-        node.position.latitude,
-        node.position.longitude,
-        node.openingTime,
-        node.closingTime
-      );
-      return;
-    }
-
-    if (this.subTrees[quadrant] instanceof Node) {
-      const existingNode = this.subTrees[quadrant];
-      const [topLeft, bottomRight] = this.getBoundaryForQuadrant(quadrant);
-      this.subTrees[quadrant] = new quadTree(topLeft, bottomRight);
-      this.subTrees[quadrant].insert(existingNode);
-      this.subTrees[quadrant].insert(node);
-      return;
-    }
-
-    if (this.subTrees[quadrant] instanceof quadTree) {
-      this.subTrees[quadrant].insert(node);
     }
   }
 
   getQuadrant(node) {
-    if (node.position.latitude <= this.midPoint.latitude) {
+    if (node.position.latitude > this.midPoint.latitude) {
       if (node.position.longitude <= this.midPoint.longitude) return "topLeft";
       return "topRight";
-    }
-    if (node.position.longitude <= this.midPoint.longitude) return "bottomLeft";
-    return "bottomRight";
-  }
-
-  getBoundaryForQuadrant(quadrant) {
-    switch (quadrant) {
-      case "topLeft":
-        return [this.topLeft, this.midPoint];
-      case "bottomLeft":
-        return [
-          new Point(this.topLeft.latitude, this.midPoint.longitude),
-          new Point(this.midPoint.latitude, this.bottomRight.longitude),
-        ];
-      case "topRight":
-        return [
-          new Point(this.midPoint.latitude, this.topLeft.longitude),
-          new Point(this.bottomRight.latitude, this.midPoint.longitude),
-        ];
-      case "bottomRight":
-        return [this.midPoint, this.bottomRight];
+    } else {
+      if (node.position.longitude <= this.midPoint.longitude)
+        return "bottomLeft";
+      return "bottomRight";
     }
   }
 
@@ -110,7 +87,7 @@ export class quadTree {
           quadrant.position.longitude
         );
         candidates.push({ node: quadrant, distance: distance });
-      } else if (quadrant instanceof quadTree) {
+      } else if (quadrant instanceof QuadTree) {
         yield* quadrant.findNearest(point);
       }
     }
