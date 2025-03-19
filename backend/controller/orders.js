@@ -1,11 +1,7 @@
 import { wrapControllerWithTryCatch } from "../middleware/utils.js";
-import {
-  cancelOrderDB,
-  findNearestKitchen,
-  getOrderById,
-  placeOrderDB,
-} from "../model/orders.js";
+import { cancelOrderDB, getOrderById, placeOrderDB } from "../model/orders.js";
 import { assignDeliveryPartner } from "../services/deliveryPartners.js";
+import { findNearestKitchen } from "../services/kitchens.js";
 
 export const placeOrder = wrapControllerWithTryCatch(async function placeOrder(
   req,

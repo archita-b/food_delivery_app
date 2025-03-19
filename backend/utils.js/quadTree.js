@@ -32,9 +32,17 @@ export class quadTree {
     };
   }
 
-  insert(node) {
-    if (node == null) return;
+  insert(items) {
+    if (!items) return;
 
+    if (Array.isArray(items)) {
+      for (const item of items) {
+        this.insert(item);
+      }
+      return;
+    }
+
+    const node = items;
     const quadrant = this.getQuadrant(node);
 
     if (this.subTrees[quadrant] == null) {
@@ -57,9 +65,8 @@ export class quadTree {
       return;
     }
 
-    if (this.subTrees[quadrant] instanceof QuadTree) {
+    if (this.subTrees[quadrant] instanceof quadTree) {
       this.subTrees[quadrant].insert(node);
-      return;
     }
   }
 

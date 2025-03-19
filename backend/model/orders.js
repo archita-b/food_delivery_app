@@ -1,8 +1,5 @@
 import pool from "./database.js";
 import { wrapInTransaction } from "../middleware/utils.js";
-import { calculateDistance } from "../utils.js/distance.js";
-import { Point } from "../utils.js/quadTree.js";
-import { kitchenQuadTree } from "./kitchens.js";
 
 export const getOrderById = wrapInTransaction(async function getOrderById(id) {
   const result = await pool.query(`SELECT * FROM orders WHERE id = $1`, [id]);
@@ -165,45 +162,3 @@ export const assignDeliveryPartnerDB = wrapInTransaction(
     return { orderId, partnerId };
   }
 );
-
-export async function findNearestKitchen(latitude, longitude, items) {
-  const itemIds = items.map((item) => item.item_id);
-  const itemQuantites = items.map((item) => item.quantity);
-
-  const kitchensResult = await pool.query(
-    `WITH request_orders AS (
-      SELECT * FROM unnest($1::int[], $2::int[]) AS t(item_id, quantity)
-    )
-      SELECT ki.kitchen_id, k.lat_long::TEXT, COUNT(ki.item_id) AS available_items
-      FROM kitchen_items ki
-      INNER JOIN request_orders ro
-      ON ki.item_id = ro.item_id
-      INNER JOIN kitchens k
-      ON ki.kitchen_id = k.id
-      WHERE ki.stock >= ro.quantity
-      AND k.opening_time <= CURRENT_TIME
-      AND k.closing_time >= CURRENT_TIME
-      GROUP BY ki.kitchen_id, k.lat_long::TEXT
-      HAVING COUNT(ki.item_id) = $3`,
-    [itemIds, itemQuantites, items.length]
-  );
-
-  if (!kitchensResult.rows.length) {
-    throw new Error(
-      "Items are either out of stock or no restaurants are open."
-    );
-  }
-
-  const availableKitchens = new Set(
-    kitchensResult.rows.map((row) => row.kitchen_id)
-  );
-
-  const customerLocation = new Point(latitude, longitude);
-  const nearestKitchens = kitchenQuadTree.findNearest(customerLocation);
-
-  for (const kitchen of nearestKitchens) {
-    if (availableKitchens.has(kitchen.id)) {
-      return kitchen;
-    }
-  }
-}

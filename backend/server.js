@@ -5,7 +5,7 @@ import authRouter from "./routes/auth.js";
 import itemsRouter from "./routes/items.js";
 import ordersRouter from "./routes/orders.js";
 import deliveryPartnersRouter from "./routes/deliveryPartners.js";
-import { buildQuadTree } from "./model/kitchens.js";
+import { buildQuadTree } from "./services/kitchens.js";
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -30,7 +30,7 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(port, async () => {
+  console.log(`Server is running on http://localhost:${port}`);
   const kitchenQuadTree = await buildQuadTree();
   // console.log(kitchenQuadTree);
-  console.log(`Server is running on http://localhost:${port}`);
 });
