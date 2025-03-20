@@ -31,6 +31,5 @@ app.use((err, req, res, next) => {
 
 app.listen(port, async () => {
   console.log(`Server is running on http://localhost:${port}`);
-  const kitchenQuadTree = await buildQuadTree();
-  // console.log(kitchenQuadTree);
+  await buildQuadTree();
 });

@@ -44,10 +44,10 @@ export class QuadTree {
       bottomRight: null,
     };
 
-    this.insert(nodes);
+    this.#insert(nodes);
   }
 
-  insert(nodes) {
+  #insert(nodes) {
     nodes = Array.isArray(nodes) ? nodes : [nodes];
 
     for (const node of nodes) {
