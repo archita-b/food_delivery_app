@@ -1,40 +1,26 @@
-import { updateAvailabilityDB } from "../model/deliveryPartners.js";
 import { assignDeliveryPartnerDB } from "../model/orders.js";
+import redisClient from "../model/redis.js";
 import { calculateDistance } from "../utils.js/distance.js";
 
-const deliveryPartnersLocation = {
-  4: { latitude: 12.97, longitude: 77.59, isAvailable: true },
-  5: { latitude: 12.95, longitude: 77.56, isAvailable: true },
-  6: { latitude: 12.98, longitude: 77.6, isAvailable: true },
-};
+async function getAvailableDeliveryPartners() {
+  const keys = await redisClient.keys(`driver:*`);
+  if (!keys.length) return [];
 
-export function updateDeliveryPartnersLocationService(
-  partnerId,
-  latitude,
-  longitude
-) {
-  if (!deliveryPartnersLocation[partnerId]) {
-    deliveryPartnersLocation[partnerId] = {
-      latitude,
-      longitude,
-      isAvailable: true,
-    };
-  } else {
-    deliveryPartnersLocation[partnerId].latitude = latitude;
-    deliveryPartnersLocation[partnerId].longitude = longitude;
+  const partners = [];
+  for (const key of keys) {
+    const partner = JSON.parse(await redisClient.get(key));
+    const partnerId = Number(key.split(":")[1]);
+    partners.push({
+      id: partnerId,
+      latitude: partner.latitude,
+      longitude: partner.longitude,
+    });
   }
+  return partners;
 }
 
-function getAvailableDeliveryPartners() {
-  return Object.entries(deliveryPartnersLocation).map(
-    ([partnerId, partnerLocation]) => {
-      return { id: partnerId, ...partnerLocation };
-    }
-  );
-}
-
-function nearestDeliveryPartner(orderLat, orderLong) {
-  const availablePartners = getAvailableDeliveryPartners();
+async function nearestDeliveryPartner(orderLat, orderLong) {
+  const availablePartners = await getAvailableDeliveryPartners();
 
   if (availablePartners.length === 0) {
     throw new Error("No delivery partners available.");
@@ -57,7 +43,7 @@ function nearestDeliveryPartner(orderLat, orderLong) {
 }
 
 export async function assignDeliveryPartner(orderId, orderLat, orderLong) {
-  const nearestPartner = nearestDeliveryPartner(orderLat, orderLong);
+  const nearestPartner = await nearestDeliveryPartner(orderLat, orderLong);
 
   if (!nearestPartner) {
     throw new Error("No delivery partner found.");
@@ -65,17 +51,17 @@ export async function assignDeliveryPartner(orderId, orderLat, orderLong) {
 
   const partnerId = nearestPartner.partnerId;
 
-  delete deliveryPartnersLocation[partnerId];
+  await redisClient.del(`driver:${partnerId}`);
 
   return await assignDeliveryPartnerDB(partnerId, orderId);
 }
 
-async function markPartnerAvailableAgain(partnerId, latitude, longitude) {
-  deliveryPartnersLocation[partnerId] = {
-    latitude,
-    longitude,
-    isAvailable: true,
-  };
+// async function markPartnerAvailableAgain(partnerId, latitude, longitude) {
+//   deliveryPartnersLocation[partnerId] = {
+//     latitude,
+//     longitude,
+//     isAvailable: true,
+//   };
 
-  await updateAvailabilityDB(partnerId, true);
-}
+//   await updateAvailabilityDB(partnerId, true);
+// }

@@ -35,7 +35,7 @@ export const findNearestKitchen = wrapControllerWithTryCatch(
     const nearestKitchens = kitchenQuadTree.findNearest(customerLocation);
 
     for (const kitchen of nearestKitchens) {
-      if (availableKitchens.has(kitchen.id)) {
+      if (kitchenIds.has(kitchen.id)) {
         return kitchen;
       }
     }

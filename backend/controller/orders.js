@@ -26,8 +26,8 @@ export const placeOrder = wrapControllerWithTryCatch(async function placeOrder(
 
   const { partnerId } = await assignDeliveryPartner(
     orderDetails.order_id,
-    nearestKitchen.latitude,
-    nearestKitchen.longitude
+    nearestKitchen.position.latitude,
+    nearestKitchen.position.longitude
   );
 
   res.status(201).json({ ...orderDetails, delivery_partner_id: partnerId });
