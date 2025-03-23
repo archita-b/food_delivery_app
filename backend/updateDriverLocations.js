@@ -7,33 +7,40 @@ function generateRandomLocation(baseLat, baseLon, radius = 0.01) {
   return { latitude: lat, longitude: lon };
 }
 
-async function updateDriverLocations() {
+async function getDeliveryPartners() {
   const drivers = await getAvailableDeliveryPartners();
-
-  const driverIDs = drivers.map((driver) => driver.id);
 
   if (!drivers.length) {
     console.log("No available drivers found.");
     return;
   }
 
-  setInterval(async () => {
-    for (const driverID of driverIDs) {
-      const location = generateRandomLocation(
-        12.935208131107496,
-        77.62405857232976
-      );
-      await redisClient.set(
-        `driver:${driverID}`,
-        JSON.stringify({
-          latitude: location.latitude,
-          longitude: location.longitude,
-        })
-      );
-    }
-  }, 5000);
+  return drivers.map((driver) => driver.id);
 }
 
-(async () => {
-  await updateDriverLocations();
-})();
+async function updateDriverLocations() {
+  const driverIds = await getDeliveryPartners();
+
+  for (const driverId of driverIds) {
+    const location = generateRandomLocation(
+      12.935208131107496,
+      77.62405857232976
+    );
+
+    await redisClient.lPush(
+      `locationQueue:${driverId}`,
+      JSON.stringify({ ...location })
+    );
+  }
+
+  // for (const driverId of driverIds) {
+  //   const locations = await redisClient.lRange(
+  //     `locationQueue:${driverId}`,
+  //     0,
+  //     -1
+  //   );
+  // console.log(`Driver ${driverId} locations:`, locations);
+  // }
+}
+
+setInterval(updateDriverLocations, 5000);

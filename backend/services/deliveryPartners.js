@@ -3,18 +3,24 @@ import redisClient from "../model/redis.js";
 import { calculateDistance } from "../utils.js/distance.js";
 
 async function getAvailableDeliveryPartners() {
-  const keys = await redisClient.keys(`driver:*`);
+  const keys = await redisClient.keys("locationQueue:*");
+
   if (!keys.length) return [];
 
   const partners = [];
+
   for (const key of keys) {
-    const partner = JSON.parse(await redisClient.get(key));
-    const partnerId = Number(key.split(":")[1]);
-    partners.push({
-      id: partnerId,
-      latitude: partner.latitude,
-      longitude: partner.longitude,
-    });
+    const driverId = key.split(":")[1];
+    const latestLocation = await redisClient.lIndex(key, 0);
+
+    if (latestLocation) {
+      const parsedLocation = JSON.parse(latestLocation);
+      partners.push({
+        id: Number(driverId),
+        latitude: parsedLocation.latitude,
+        longitude: parsedLocation.longitude,
+      });
+    }
   }
   return partners;
 }

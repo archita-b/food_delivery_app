@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon backend/server.js"
+    "dev": "nodemon backend/server.js",
+    "script": "node backend/updateDriverLocations.js"
   },
   "keywords": [],
   "author": "",
