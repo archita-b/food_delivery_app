@@ -1,5 +1,16 @@
 import pool from "../model/database.js";
 
+export function wrapWithTryCatch(fn) {
+  return async function (...args) {
+    try {
+      return fn(...args);
+    } catch (error) {
+      console.log(`Error in ${fn.name} function`, error.message);
+      throw error;
+    }
+  };
+}
+
 export function wrapControllerWithTryCatch(fn) {
   return async function (req, res, next) {
     try {

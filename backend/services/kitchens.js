@@ -1,31 +1,29 @@
 import { getKitchens, getOpenKitchensWithStock } from "../model/kitchens.js";
 import { Node, Point, QuadTree } from "../utils.js/quadTree.js";
-import { wrapControllerWithTryCatch } from "../middleware/utils.js";
+import { wrapWithTryCatch } from "../middleware/utils.js";
 
 let kitchenQuadTree = null;
 
-export const buildQuadTree = wrapControllerWithTryCatch(
-  async function buildQuadTree() {
-    const kitchens = await getKitchens();
+export const buildQuadTree = wrapWithTryCatch(async function buildQuadTree() {
+  const kitchens = await getKitchens();
 
-    const kitchenNodes = kitchens.map((kitchen) => {
-      const { x: latitude, y: longitude } = kitchen.lat_long;
-      return new Node(
-        kitchen.id,
-        latitude,
-        longitude,
-        kitchen.opening_time,
-        kitchen.closing_time
-      );
-    });
+  const kitchenNodes = kitchens.map((kitchen) => {
+    const { x: latitude, y: longitude } = kitchen.lat_long;
+    return new Node(
+      kitchen.id,
+      latitude,
+      longitude,
+      kitchen.opening_time,
+      kitchen.closing_time
+    );
+  });
 
-    kitchenQuadTree = new QuadTree(kitchenNodes);
+  kitchenQuadTree = new QuadTree(kitchenNodes);
 
-    return kitchenQuadTree;
-  }
-);
+  return kitchenQuadTree;
+});
 
-export const findNearestKitchen = wrapControllerWithTryCatch(
+export const findNearestKitchen = wrapWithTryCatch(
   async function findNearestKitchen(latitude, longitude, items) {
     const kitchens = await getOpenKitchensWithStock(items);
 
