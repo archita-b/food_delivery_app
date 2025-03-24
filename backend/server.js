@@ -6,6 +6,7 @@ import itemsRouter from "./routes/items.js";
 import ordersRouter from "./routes/orders.js";
 import deliveryPartnersRouter from "./routes/deliveryPartners.js";
 import { buildQuadTree } from "./services/kitchens.js";
+import "./processLocationQueue.js";
 
 const app = express();
 const port = process.env.PORT || 5000;

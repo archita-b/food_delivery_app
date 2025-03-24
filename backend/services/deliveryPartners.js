@@ -1,7 +1,7 @@
 import { wrapWithTryCatch } from "../middleware/utils.js";
 import { assignDeliveryPartnerDB } from "../model/orders.js";
 import redisClient from "../model/redis.js";
-import { driversArray } from "../updateDriverLocations.js";
+import { driversArray } from "../processLocationQueue.js";
 import { calculateDistance } from "../utils.js/distance.js";
 
 const nearestDeliveryPartner = wrapWithTryCatch(
