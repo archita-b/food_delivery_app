@@ -11,7 +11,7 @@ async function processLocationQueue() {
       if (!message) break;
 
       const parsedMessage = JSON.parse(message);
-      if (parsedMessage.msgType === "locations") {
+      if (parsedMessage.msgType === "driverLocation") {
         const { driverId, latitude, longitude } = parsedMessage;
         driversObject[driverId] = { latitude, longitude };
       }
@@ -29,6 +29,6 @@ async function processLocationQueue() {
   }
 }
 
-setInterval(processLocationQueue, 8000);
+setInterval(processLocationQueue, 1000);
 
 export { driversArray };

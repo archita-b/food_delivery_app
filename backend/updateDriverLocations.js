@@ -2,10 +2,28 @@ import { wrapWithTryCatch } from "./middleware/utils.js";
 import { getAvailableDeliveryPartners } from "./model/deliveryPartners.js";
 import redisClient from "./model/redis.js";
 
-function generateRandomLocation(baseLat, baseLon, radius = 0.01) {
-  const lat = baseLat + (Math.random() - 0.5) * radius;
-  const lon = baseLon + (Math.random() - 0.5) * radius;
-  return { latitude: lat, longitude: lon };
+const driverLocations = {};
+
+function generateRandomWalkLocation(
+  driverId,
+  baseLat,
+  baseLon,
+  stepSize = 0.0001
+) {
+  if (!driverLocations[driverId]) {
+    driverLocations[driverId] = { latitude: baseLat, longitude: baseLon };
+  }
+
+  const deltaLat = (Math.random() - 0.5) * stepSize;
+  const deltaLon = (Math.random() - 0.5) * stepSize;
+
+  driverLocations[driverId].latitude += deltaLat;
+  driverLocations[driverId].longitude += deltaLon;
+
+  return {
+    latitude: driverLocations[driverId].latitude,
+    longitude: driverLocations[driverId].longitude,
+  };
 }
 
 async function getDeliveryPartners() {
@@ -25,14 +43,15 @@ async function updateDriverLocations() {
     if (!driverIds.length) return;
 
     for (const driverId of driverIds) {
-      const location = generateRandomLocation(
+      const location = generateRandomWalkLocation(
+        driverId,
         12.935208131107496,
         77.62405857232976
       );
 
       await redisClient.lPush(
         `queue`,
-        JSON.stringify({ msgType: "locations", driverId, ...location })
+        JSON.stringify({ msgType: "driverLocation", driverId, ...location })
       );
     }
   } catch (error) {
