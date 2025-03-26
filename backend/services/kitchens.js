@@ -9,13 +9,7 @@ export const buildQuadTree = wrapWithTryCatch(async function buildQuadTree() {
 
   const kitchenNodes = kitchens.map((kitchen) => {
     const { x: latitude, y: longitude } = kitchen.lat_long;
-    return new Node(
-      kitchen.id,
-      latitude,
-      longitude,
-      kitchen.opening_time,
-      kitchen.closing_time
-    );
+    return new Node(kitchen.id, latitude, longitude);
   });
 
   kitchenQuadTree = new QuadTree(kitchenNodes);

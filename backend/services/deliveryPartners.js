@@ -3,31 +3,50 @@ import { assignDeliveryPartnerDB } from "../model/orders.js";
 import redisClient from "../model/redis.js";
 import { driversArray } from "../processLocationQueue.js";
 import { calculateDistance } from "../utils.js/distance.js";
+import { Node, Point, QuadTree } from "../utils.js/quadTree.js";
 
-const nearestDeliveryPartner = wrapWithTryCatch(
-  async function nearestDeliveryPartner(orderLat, orderLong) {
-    const availablePartners = [...driversArray];
+let driverQuadTree = null;
 
-    if (availablePartners.length === 0) {
-      throw new Error("No delivery partners available.");
-    }
+const buildDriverQuadTree = wrapWithTryCatch(function buildDriverQuadTree() {
+  if (!driversArray.length) return driverQuadTree;
 
-    let nearestPartner = null;
-    for (const partner of availablePartners) {
-      const distance = calculateDistance(
-        orderLat,
-        orderLong,
-        partner.latitude,
-        partner.longitude
-      );
+  const driverNodes = driversArray.map((element) => {
+    const { latitude, longitude } = element;
+    return new Node(element.driverId, latitude, longitude);
+  });
 
-      if (!nearestPartner || distance < nearestPartner.distance) {
-        nearestPartner = { partnerId: partner.driverId, distance };
-      }
-    }
-    return nearestPartner;
+  driverQuadTree = new QuadTree(driverNodes);
+  return driverQuadTree;
+});
+
+export const updateDriverQuadTree = function () {
+  buildDriverQuadTree();
+  setInterval(buildDriverQuadTree, 5000);
+};
+
+const nearestDeliveryPartner = wrapWithTryCatch(function nearestDeliveryPartner(
+  orderLat,
+  orderLon
+) {
+  const availablePartners = [...driversArray];
+
+  if (availablePartners.length === 0) {
+    throw new Error("No delivery partners available.");
   }
-);
+
+  const driverIds = new Set(
+    availablePartners.map((partner) => partner.driverId)
+  );
+
+  const customerLocation = new Point(orderLat, orderLon);
+  const nearestDrivers = driverQuadTree.findNearest(customerLocation);
+
+  for (const driver of nearestDrivers) {
+    if (driverIds.has(driver.driverId)) {
+      return driver;
+    }
+  }
+});
 
 export const assignDeliveryPartner = wrapWithTryCatch(
   async function assignDeliveryPartner(orderId, orderLat, orderLong) {

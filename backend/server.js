@@ -6,6 +6,7 @@ import itemsRouter from "./routes/items.js";
 import ordersRouter from "./routes/orders.js";
 import deliveryPartnersRouter from "./routes/deliveryPartners.js";
 import { buildQuadTree } from "./services/kitchens.js";
+import { updateDriverQuadTree } from "./services/deliveryPartners.js";
 import "./processLocationQueue.js";
 
 const app = express();
@@ -33,4 +34,6 @@ app.use((err, req, res, next) => {
 app.listen(port, async () => {
   console.log(`Server is running on http://localhost:${port}`);
   await buildQuadTree();
+  updateDriverQuadTree();
+  console.log(updateDriverQuadTree());
 });

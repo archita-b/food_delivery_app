@@ -8,7 +8,7 @@ function generateRandomWalkLocation(
   driverId,
   baseLat,
   baseLon,
-  stepSize = 0.0001
+  stepSize = 0.001
 ) {
   if (!driverLocations[driverId]) {
     driverLocations[driverId] = { latitude: baseLat, longitude: baseLon };
@@ -54,6 +54,7 @@ async function updateDriverLocations() {
         JSON.stringify({ msgType: "driverLocation", driverId, ...location })
       );
     }
+    console.log(await redisClient.lRange("queue", 0, -1));
   } catch (error) {
     console.log(`Error in updateDriverLocations function:`, error.message);
   }

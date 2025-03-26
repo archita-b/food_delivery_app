@@ -11,8 +11,6 @@ export class Node {
   constructor(id, latitude, longitude, openingTime, closingTime) {
     this.id = id;
     this.position = new Point(latitude, longitude);
-    this.openingTime = openingTime;
-    this.closingTime = closingTime;
   }
 }
 

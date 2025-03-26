@@ -29,6 +29,6 @@ async function processLocationQueue() {
   }
 }
 
-setInterval(processLocationQueue, 1000);
+setInterval(processLocationQueue, 10000);
 
 export { driversArray };
