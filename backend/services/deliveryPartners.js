@@ -3,7 +3,7 @@ import { assignDeliveryPartnerDB } from "../model/orders.js";
 import redisClient from "../model/redis.js";
 import { driversArray } from "../processLocationQueue.js";
 import { calculateDistance } from "../utils.js/distance.js";
-import { Node, Point, QuadTree } from "../utils.js/quadTree.js";
+import { Node, Point, DriverQuadTree } from "../utils.js/driverQuadTree.js";
 
 let driverQuadTree = null;
 
@@ -15,7 +15,7 @@ const buildDriverQuadTree = wrapWithTryCatch(function buildDriverQuadTree() {
     return new Node(element.driverId, latitude, longitude);
   });
 
-  driverQuadTree = new QuadTree(driverNodes);
+  driverQuadTree = new DriverQuadTree(driverNodes);
   return driverQuadTree;
 });
 

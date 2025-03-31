@@ -8,13 +8,13 @@ export class Point {
 }
 
 export class Node {
-  constructor(id, latitude, longitude, openingTime, closingTime) {
+  constructor(id, latitude, longitude) {
     this.id = id;
     this.position = new Point(latitude, longitude);
   }
 }
 
-export class QuadTree {
+export class KitchenQuadTree {
   constructor(nodes = []) {
     if (!Array.isArray(nodes) || !nodes.length) {
       throw new Error("Quad tree must be initialized with at least one node.");

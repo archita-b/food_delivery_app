@@ -1,5 +1,5 @@
 import { getKitchens, getOpenKitchensWithStock } from "../model/kitchens.js";
-import { Node, Point, QuadTree } from "../utils.js/quadTree.js";
+import { KitchenQuadTree, Node, Point } from "../utils.js/kitchenQuadTree.js";
 import { wrapWithTryCatch } from "../middleware/utils.js";
 
 let kitchenQuadTree = null;
@@ -12,7 +12,7 @@ export const buildQuadTree = wrapWithTryCatch(async function buildQuadTree() {
     return new Node(kitchen.id, latitude, longitude);
   });
 
-  kitchenQuadTree = new QuadTree(kitchenNodes);
+  kitchenQuadTree = new KitchenQuadTree(kitchenNodes);
 
   return kitchenQuadTree;
 });
