@@ -14,112 +14,116 @@ export class Node {
   }
 }
 
-export class DriverQuadTree {
-  constructor(items = []) {
-    if (!Array.isArray(items) || !items.length) {
-      throw new Error("Quad tree must be initialized with at least one node.");
-    }
-
-    this.items = new Map();
+class BaseQuadTree {
+  constructor(topLeft, bottomRight) {
+    this.topLeft = topLeft;
+    this.bottomRight = bottomRight;
+    this.root = null;
     this.subTrees = {
       topLeft: null,
-      topRight: null,
       bottomLeft: null,
+      topRight: null,
       bottomRight: null,
     };
-
-    this.updateBoundaries(items);
-    this.#insert(items);
   }
 
-  updateBoundaries(items) {
-    const latitudes = items.map((item) => item.position.latitude);
-    const longitudes = items.map((item) => item.position.longitude);
+  insert(item) {
+    if (!item) return;
 
-    this.topLeft = new Point(Math.max(...latitudes), Math.min(...longitudes));
-    this.bottomRight = new Point(
-      Math.min(...latitudes),
-      Math.max(...longitudes)
-    );
-    this.midPoint = new Point(
-      (this.topLeft.latitude + this.bottomRight.latitude) / 2,
-      (this.topLeft.longitude + this.bottomRight.longitude) / 2
-    );
-  }
-
-  #insert(items) {
-    items = Array.isArray(items) ? items : [items];
-
-    for (const item of items) {
-      this.items.set(item.id, item);
-
-      const quadrant = this.getQuadrant(item);
-      if (this.subTrees[quadrant] == null) {
-        this.subTrees[quadrant] = item;
-      } else if (this.subTrees[quadrant] instanceof Node) {
-        const existingItem = this.subTrees[quadrant];
-        this.subTrees[quadrant] = new DriverQuadTree([item, existingItem]);
-      } else {
-        this.subTrees[quadrant].insert(item);
-      }
+    if (this.root == null) {
+      this.root = new Node(
+        item.id,
+        item.position.latitude,
+        item.position.longitude
+      );
+      return;
     }
+
+    const quadrant = this.getQuadrant(item);
+    if (this.subTrees[quadrant] == null) {
+      const [topLeft, bottomRight] = this.getBoundaryForQuadrant(quadrant);
+      this.subTrees[quadrant] = new SubQuadTree(topLeft, bottomRight);
+    }
+
+    this.subTrees[quadrant].insert(item);
   }
 
-  getQuadrant(node) {
-    if (node.position.latitude > this.midPoint.latitude) {
-      if (node.position.longitude <= this.midPoint.longitude) return "topLeft";
+  getQuadrant(item) {
+    if (item.position.latitude >= this.root.position.latitude) {
+      if (item.position.longitude <= this.root.position.longitude)
+        return "topLeft";
       return "topRight";
     } else {
-      if (node.position.longitude <= this.midPoint.longitude)
+      if (item.position.longitude <= this.root.position.longitude)
         return "bottomLeft";
       return "bottomRight";
     }
   }
 
-  update(itemId, newLocation) {
-    const item = this.items.get(itemId);
-
-    if (
-      newLocation.latitude > this.topLeft.latitude ||
-      newLocation.latitude < this.bottomRight.latitude ||
-      newLocation.longitude < this.topLeft.longitude ||
-      newLocation.longitude > this.bottomRight.longitude
-    ) {
-      this.updateBoundaries([...this.items.values()]);
-    }
-
-    this.items.delete(itemId);
-    this.#insert(item);
-  }
-
-  remove(itemId) {
-    if (this.items.has(itemId)) {
-      this.items.delete(itemId);
-      this.updateBoundaries([...this.items.values()]);
+  getBoundaryForQuadrant(quadrant) {
+    switch (quadrant) {
+      case "topLeft":
+        return [this.topLeft, this.root];
+      case "bottomLeft":
+        return [
+          new Point(this.root.position.latitude, this.topLeft.longitude),
+          new Point(this.bottomRight.latitude, this.root.position.longitude),
+        ];
+      case "topRight":
+        return [
+          new Point(this.topLeft.latitude, this.root.position.longitude),
+          new Point(this.root.position.latitude, this.bottomRight.longitude),
+        ];
+      case "bottomRight":
+        return [this.root, this.bottomRight];
     }
   }
+}
 
-  *findNearest(point) {
-    const candidates = [];
-
-    for (const quadrant of Object.values(this.subTrees)) {
-      if (quadrant instanceof Node) {
-        const distance = calculateDistance(
-          point.latitude,
-          point.longitude,
-          quadrant.position.latitude,
-          quadrant.position.longitude
-        );
-        candidates.push({ node: quadrant, distance });
-      } else if (quadrant instanceof DriverQuadTree) {
-        yield* quadrant.findNearest(point);
-      }
+export class GeoSpatialQuadTree extends BaseQuadTree {
+  constructor(items = []) {
+    if (!Array.isArray(items) || !items.length) {
+      throw new Error(
+        "GeoSpatialQuadTree tree must be initialized with at least one node."
+      );
     }
 
-    candidates.sort((a, b) => a.distance - b.distance);
+    super(new Point(90, -90), new Point(0, 180));
+    this.items = new Map();
 
-    for (const { node } of candidates) {
-      yield node;
+    for (const item of items) {
+      this.items.set(item.id, item);
+      this.insert(item);
     }
+  }
+
+  remove(item) {
+    if (!item) return;
+
+    if (this.root && this.root.id === item.id) {
+      this.root = null;
+      return;
+    }
+
+    const quadrant = this.getQuadrant(item);
+    this.subTrees[quadrant].remove(item);
+
+    this.items.set(item.id, null);
+  }
+
+  update(item) {
+    if (!item || !this.items.has(item.id)) return;
+
+    const oldItem = this.items.get(item.id);
+    this.remove(oldItem);
+
+    this.items.set(item.id, item);
+    this.insert(item);
+  }
+}
+
+class SubQuadTree extends BaseQuadTree {
+  constructor(topLeft, bottomRight) {
+    super(topLeft, bottomRight);
   }
 }
