@@ -25,10 +25,12 @@ class BaseQuadTree {
       topRight: null,
       bottomRight: null,
     };
+    this.totalNodes = 0;
+    this.deletedCount = 0;
   }
 
   insert(item) {
-    if (!item) return;
+    if (!item || item.deleted) return;
 
     if (this.root == null) {
       this.root = new Node(
@@ -36,6 +38,7 @@ class BaseQuadTree {
         item.position.latitude,
         item.position.longitude
       );
+      this.totalNodes++;
       return;
     }
 
@@ -46,6 +49,37 @@ class BaseQuadTree {
     }
 
     this.subTrees[quadrant].insert(item);
+    this.totalNodes++;
+  }
+
+  remove(item) {
+    if (!item) return;
+
+    if (this.root && this.root.id === item.id) {
+      this.root.deleted = true;
+      this.deletedCount++;
+      return;
+    }
+
+    const quadrant = this.getQuadrant(item);
+    if (this.subTrees[quadrant]) {
+      this.subTrees[quadrant].remove(item);
+    }
+  }
+
+  collectLiveNodes(node) {
+    const results = [];
+    if (!node || node.deleted) return;
+
+    results.push(node);
+
+    for (const quadrant in this.subTrees) {
+      const subTree = this.subTrees[quadrant];
+      if (subTree) {
+        results.push([...subTree.collectLiveNodes(subTree.root)]);
+      }
+    }
+    return results;
   }
 
   getQuadrant(item) {
@@ -97,28 +131,71 @@ export class GeoSpatialQuadTree extends BaseQuadTree {
     }
   }
 
-  remove(item) {
-    if (!item) return;
-
-    if (this.root && this.root.id === item.id) {
-      this.root = null;
-      return;
-    }
-
-    const quadrant = this.getQuadrant(item);
-    this.subTrees[quadrant].remove(item);
-
-    this.items.set(item.id, null);
-  }
-
-  update(item) {
+  update(item, newLat, newLon) {
     if (!item || !this.items.has(item.id)) return;
 
     const oldItem = this.items.get(item.id);
     this.remove(oldItem);
 
     this.items.set(item.id, item);
+
+    item.position.latitude = newLat;
+    item.position.longitude = newLon;
+    item.deleted = false;
+
     this.insert(item);
+  }
+
+  rebuildSubTree() {
+    const subTree = this.subTrees[quadrant];
+    if (!subTree) return;
+
+    const liveNodes = this.collectLiveNodes(subTree.root);
+    const deletedRatio = subTree.deletedCount / subTree.totalNodes;
+
+    if (deletedRatio > 0.2) {
+      this.subTrees[quadrant] = new SubQuadTree(
+        subTree.topLeft,
+        subTree.bottomRight
+      );
+
+      for (const node of liveNodes) {
+        this.subTrees[quadrant].insert(node);
+      }
+    }
+  }
+
+  *findNearest(point) {
+    const queue = [];
+
+    if (this.root && !this.root.deleted) {
+      const distanceToRoot = calculateDistance(
+        point.latitude,
+        point.longitude,
+        this.root.latitude,
+        this.root.longitude
+      );
+      queue.push({ node: this.root, distance: distanceToRoot });
+    }
+
+    for (const quadrant in this.subTrees) {
+      const subTree = this.subTrees[quadrant];
+      if (subTree && subTree.root && !subTree.root.deleted) {
+        const distance = calculateDistance(
+          point.latitude,
+          point.longitude,
+          subTree.root.position.latitude,
+          subTree.root.position.longitude
+        );
+        queue.push({ node: subTree.root, distance: distance });
+      }
+    }
+
+    queue.sort((a, b) => a.distance - b.distance);
+
+    for (const { node } of queue) {
+      yield node;
+    }
   }
 }
 
