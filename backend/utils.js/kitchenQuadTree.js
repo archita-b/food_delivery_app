@@ -55,7 +55,7 @@ export class KitchenQuadTree {
         this.subTrees[quadrant] = node;
       } else if (this.subTrees[quadrant] instanceof Node) {
         const existingNode = this.subTrees[quadrant];
-        this.subTrees[quadrant] = new QuadTree([existingNode, node]);
+        this.subTrees[quadrant] = new KitchenQuadTree([existingNode, node]);
       } else {
         this.subTrees[quadrant].insert(node);
       }
@@ -85,7 +85,7 @@ export class KitchenQuadTree {
           quadrant.position.longitude
         );
         candidates.push({ node: quadrant, distance: distance });
-      } else if (quadrant instanceof QuadTree) {
+      } else if (quadrant instanceof KitchenQuadTree) {
         yield* quadrant.findNearest(point);
       }
     }

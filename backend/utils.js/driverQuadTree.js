@@ -165,35 +165,34 @@ export class GeoSpatialQuadTree extends BaseQuadTree {
     }
   }
 
+  // BFS using a queue
   *findNearest(point) {
-    const queue = [];
+    const result = [];
+    const queue = [this];
 
-    if (this.root && !this.root.deleted) {
-      const distanceToRoot = calculateDistance(
-        point.latitude,
-        point.longitude,
-        this.root.latitude,
-        this.root.longitude
-      );
-      queue.push({ node: this.root, distance: distanceToRoot });
-    }
+    while (queue.length > 0) {
+      const current = queue.shift();
 
-    for (const quadrant in this.subTrees) {
-      const subTree = this.subTrees[quadrant];
-      if (subTree && subTree.root && !subTree.root.deleted) {
-        const distance = calculateDistance(
+      if (!current || !current.root) continue;
+
+      if (!current.root.deleted) {
+        const distanceToRoot = calculateDistance(
           point.latitude,
           point.longitude,
-          subTree.root.position.latitude,
-          subTree.root.position.longitude
+          this.root.latitude,
+          this.root.longitude
         );
-        queue.push({ node: subTree.root, distance: distance });
+        result.push({ node: this.root, distance: distanceToRoot });
+      }
+
+      for (const subTree of Object.values(current.subTrees)) {
+        if (subTree) queue.push(subTree);
       }
     }
 
-    queue.sort((a, b) => a.distance - b.distance);
+    result.sort((a, b) => a.distance - b.distance);
 
-    for (const { node } of queue) {
+    for (const { node } of result) {
       yield node;
     }
   }
