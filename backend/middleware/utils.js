@@ -3,7 +3,7 @@ import pool from "../model/database.js";
 export function wrapWithTryCatch(fn) {
   return async function (...args) {
     try {
-      return fn(...args);
+      return await fn(...args);
     } catch (error) {
       console.log(`Error in ${fn.name} function`, error.message);
       throw error;

@@ -3,26 +3,39 @@ import { assignDeliveryPartnerDB } from "../model/orders.js";
 import redisClient from "../model/redis.js";
 import { driversArray } from "../processLocationQueue.js";
 import { calculateDistance } from "../utils.js/distance.js";
-import { Node, Point, DriverQuadTree } from "../utils.js/driverQuadTree.js";
+import { Node, Point, GeoSpatialQuadTree } from "../utils.js/driverQuadTree.js";
 
 let driverQuadTree = null;
 
-const buildDriverQuadTree = wrapWithTryCatch(function buildDriverQuadTree() {
-  if (!driversArray.length) return driverQuadTree;
+export const initializeDriverQuadTree = wrapWithTryCatch(
+  async function initializeDriverQuadTree() {
+    if (!driversArray.length) return driverQuadTree;
 
-  const driverNodes = driversArray.map((element) => {
-    const { latitude, longitude } = element;
-    return new Node(element.driverId, latitude, longitude);
-  });
+    const driverNodes = driversArray.map(
+      ({ driverId, latitude, longitude }) => {
+        return new Node(driverId, latitude, longitude);
+      }
+    );
 
-  driverQuadTree = new DriverQuadTree(driverNodes);
-  return driverQuadTree;
-});
+    driverQuadTree = new GeoSpatialQuadTree(driverNodes);
+    return driverQuadTree;
+  }
+);
 
-export const updateDriverQuadTree = function () {
-  buildDriverQuadTree();
-  setInterval(buildDriverQuadTree, 5000);
-};
+export const updateDriverLocations = wrapWithTryCatch(
+  async function updateDriverLocations(driverId, newLat, newLon) {
+    if (!driverQuadTree) await initializeDriverQuadTree();
+
+    let driverNode = driverQuadTree.items.get(driverId);
+
+    if (!driverNode) {
+      driverNode = new Node(driverId, newLat, newLon);
+      driverQuadTree.insert(driverNode);
+    } else {
+      driverQuadTree.update(driverNode, newLat, newLon);
+    }
+  }
+);
 
 const nearestDeliveryPartner = wrapWithTryCatch(function nearestDeliveryPartner(
   orderLat,

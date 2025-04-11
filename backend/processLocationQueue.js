@@ -1,9 +1,10 @@
 import redisClient from "./model/redis.js";
+import { updateDriverLocations } from "./services/deliveryPartners.js";
 
 const driversObject = {};
 let driversArray = [];
 
-async function processLocationQueue() {
+export async function processLocationQueue() {
   try {
     while (true) {
       const message = await redisClient.lPop("queue");
@@ -24,11 +25,18 @@ async function processLocationQueue() {
         longitude: driversObject[driverId].longitude,
       };
     });
+
+    for (const { driverId, latitude, longitude } of driversArray) {
+      await updateDriverLocations(driverId, latitude, longitude);
+    }
   } catch (error) {
     console.log(`Error in processLocationQueue function:`, error.message);
   }
 }
 
-setInterval(processLocationQueue, 10000);
+setInterval(async () => {
+  // console.log("interval init");
+  await processLocationQueue();
+}, 1000);
 
 export { driversArray };

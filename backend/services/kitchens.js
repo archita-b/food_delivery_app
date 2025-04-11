@@ -4,18 +4,20 @@ import { wrapWithTryCatch } from "../middleware/utils.js";
 
 let kitchenQuadTree = null;
 
-export const buildQuadTree = wrapWithTryCatch(async function buildQuadTree() {
-  const kitchens = await getKitchens();
+export const buildKitchenQuadTree = wrapWithTryCatch(
+  async function buildKitchenQuadTree() {
+    const kitchens = await getKitchens();
 
-  const kitchenNodes = kitchens.map((kitchen) => {
-    const { x: latitude, y: longitude } = kitchen.lat_long;
-    return new Node(kitchen.id, latitude, longitude);
-  });
+    const kitchenNodes = kitchens.map((kitchen) => {
+      const { x: latitude, y: longitude } = kitchen.lat_long;
+      return new Node(kitchen.id, latitude, longitude);
+    });
 
-  kitchenQuadTree = new KitchenQuadTree(kitchenNodes);
+    kitchenQuadTree = new KitchenQuadTree(kitchenNodes);
 
-  return kitchenQuadTree;
-});
+    return kitchenQuadTree;
+  }
+);
 
 export const findNearestKitchen = wrapWithTryCatch(
   async function findNearestKitchen(latitude, longitude, items) {
