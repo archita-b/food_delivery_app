@@ -1,4 +1,5 @@
 import { wrapWithTryCatch } from "../middleware/utils.js";
+import { getAvailableDeliveryPartners } from "../model/deliveryPartners.js";
 import { assignDeliveryPartnerDB } from "../model/orders.js";
 import redisClient from "../model/redis.js";
 import { driversArray } from "../processLocationQueue.js";
@@ -37,29 +38,28 @@ export const updateDriverLocations = wrapWithTryCatch(
   }
 );
 
-const nearestDeliveryPartner = wrapWithTryCatch(function nearestDeliveryPartner(
-  orderLat,
-  orderLon
-) {
-  const availablePartners = [...driversArray];
+const nearestDeliveryPartner = wrapWithTryCatch(
+  async function nearestDeliveryPartner(orderLat, orderLon) {
+    const availablePartners = await getAvailableDeliveryPartners();
 
-  if (availablePartners.length === 0) {
-    throw new Error("No delivery partners available.");
-  }
+    if (availablePartners.length === 0) {
+      throw new Error("No delivery partners available.");
+    }
 
-  const driverIds = new Set(
-    availablePartners.map((partner) => partner.driverId)
-  );
+    const driverIds = new Set(
+      availablePartners.map((partner) => partner.driverId)
+    );
 
-  const customerLocation = new Point(orderLat, orderLon);
-  const nearestDrivers = driverQuadTree.findNearest(customerLocation);
+    const customerLocation = new Point(orderLat, orderLon);
+    const nearestDrivers = driverQuadTree.findNearest(customerLocation);
 
-  for (const driver of nearestDrivers) {
-    if (driverIds.has(driver.driverId)) {
-      return driver;
+    for (const driver of nearestDrivers) {
+      if (driverIds.has(driver.driverId)) {
+        return driver;
+      }
     }
   }
-});
+);
 
 export const assignDeliveryPartner = wrapWithTryCatch(
   async function assignDeliveryPartner(orderId, orderLat, orderLong) {
@@ -69,20 +69,8 @@ export const assignDeliveryPartner = wrapWithTryCatch(
       throw new Error("No delivery partner found.");
     }
 
-    const partnerId = nearestPartner.partnerId;
-
-    await redisClient.del(`driver:${partnerId}`);
+    const partnerId = nearestPartner.id;
 
     return await assignDeliveryPartnerDB(partnerId, orderId);
   }
 );
-
-// async function markPartnerAvailableAgain(partnerId, latitude, longitude) {
-//   deliveryPartnersLocation[partnerId] = {
-//     latitude,
-//     longitude,
-//     isAvailable: true,
-//   };
-
-//   await updateAvailabilityDB(partnerId, true);
-// }
