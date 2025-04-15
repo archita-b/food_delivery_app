@@ -35,7 +35,6 @@ export async function processLocationQueue() {
 }
 
 setInterval(async () => {
-  // console.log("interval init");
   await processLocationQueue();
 }, 1000);
 
